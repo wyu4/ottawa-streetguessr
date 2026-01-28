@@ -1,0 +1,19 @@
+$font: Helvetica;
+$radius: 10px;
+
+:root {
+    background-color: black;
+    overflow-x: hidden;
+}
+
+.fullscreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+.background {
+    background-image: linear-gradient(to bottom, #12121b 70%, #191720);
+}
