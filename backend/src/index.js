@@ -22,33 +22,33 @@ app.get("/api", (_, res) => res.sendStatus(403));
 
 app.get("/api/enabled", (_, res) => res.send(true));
 
-app.get("/api/game", (req, res) => {
-    console.log(`<<< Received game request from ${req.ip}.`);
-    fetch("https://traffic.ottawa.ca/map/service/camera", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-        .then((response) => {
-            return response.json();
-        })
-        .then((parsed) => {
-            const cameras = parsed.cameras;
-            const chosen = cameras[Math.floor(Math.random() * cameras.length)];
-            return res.status(200).send({
-                lat: chosen.latitude,
-                name: chosen.name,
-                lon: chosen.longitude,
-                feed: `https://traffic.ottawa.ca/camera?id=${chosen.id}`,
-            });
-        })
-        .catch((err) => {
-            console.error(err);
-            if (res.headersSent) return;
-            res.sendStatus(500);
-        });
-});
+// app.get("/api/game", (req, res) => {
+//     console.log(`<<< Received game request from ${req.ip}.`);
+//     fetch("https://traffic.ottawa.ca/map/service/camera", {
+//         method: "GET",
+//         headers: {
+//             "Content-Type": "application/json",
+//         },
+//     })
+//         .then((response) => {
+//             return response.json();
+//         })
+//         .then((parsed) => {
+//             const cameras = parsed.cameras;
+//             const chosen = cameras[Math.floor(Math.random() * cameras.length)];
+//             return res.status(200).send({
+//                 lat: chosen.latitude,
+//                 name: chosen.name,
+//                 lon: chosen.longitude,
+//                 feed: `https://traffic.ottawa.ca/camera?id=${chosen.id}`,
+//             });
+//         })
+//         .catch((err) => {
+//             console.error(err);
+//             if (res.headersSent) return;
+//             res.sendStatus(500);
+//         });
+// });
 
 webSocketServer.on("connection", (ws) => {
     console.log("New client connected");
