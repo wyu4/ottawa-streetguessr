@@ -1,0 +1,28 @@
+{
+  "name": "ottawa-streetguessr-server",
+  "version": "1.0.0",
+  "description": "Ottawa StreetGuessr's server",
+  "homepage": "https://github.com/wyu4/ottawa-streetguessr-server#readme",
+  "bugs": {
+    "url": "https://github.com/wyu4/ottawa-streetguessr-server/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wyu4/ottawa-streetguessr-server.git"
+  },
+  "license": "MIT",
+  "author": "Wilson Yu",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "vercel dev",
+    "build": "echo \"Warning: no build script required for static website.\" && exit 0",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "path": "^0.12.7",
+    "vercel": "^50.1.3",
+    "ws": "^8.18.3"
+  }
+}
