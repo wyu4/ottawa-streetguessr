@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "ottawa-streetguessr",
+			"path": "."
+		},
+		{
+			"name": "backend",
+			"path": "backend"
+		},
+		{
+			"name": "frontend",
+			"path": "frontend"
+		}
+	]
+}
