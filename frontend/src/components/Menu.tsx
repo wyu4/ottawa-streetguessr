@@ -1,6 +1,10 @@
-import type { ReactNode } from "react";
-import '../styles/Menu.scss';
+import "../styles/Menu.scss";
 
-export default function Menu({ children = [] }: { children?: ReactNode[] }) {
-    return <div className="menu">{children}</div>;
+export default function Menu({ title = "???", children = [] }: MenuAttributes) {
+    return <div className="menu">
+        <div className="top">
+            <h1>{title}</h1>
+        </div>
+        <div className="body">{children}</div>
+    </div>;
 }
