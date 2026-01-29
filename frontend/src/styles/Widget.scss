@@ -1,0 +1,14 @@
+@use './Theme.scss' as *;
+
+.widget {
+    border-radius: $radius;
+    border-width: 2px;
+    border-style: solid;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: $spacing-1;
+    background-image: $background-2;
+    border-color: $border-1;
+}

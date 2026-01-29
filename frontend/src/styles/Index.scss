@@ -1,16 +1,38 @@
+@use './Theme.scss' as *;
+
 :root {
     background-color: black;
     overflow-x: hidden;
 }
 
-.fullscreen {
+.background {
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
     right: 0;
+    background-image: $background-1;
 }
 
-.background {
-    background-image: linear-gradient(to bottom, #12121b 70%, #191720);
+p, h1, h2, h3, button {
+    color: #fcf9ff;
+}
+
+h1 {
+    font-family: $title;
+    font-size: 2.5vw;
+    text-align: center;
+}
+
+p {
+    font-family: $paragraph;
+}
+
+button {
+    border-radius: 1000vw;
+    font-family: $paragraph;
+    font-size: 1.2em;
+    background-image: $success;
+    border-width: 2px;
+    border-style: solid;
 }

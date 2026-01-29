@@ -1,2 +1,13 @@
-$font: Helvetica;
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+$title: "Bungee", sans-serif;
+$paragraph: "Nunito", sans-serif;
 $radius: 10px;
+$background-1: linear-gradient(to right, #090026, #38324c, #090026);
+$background-2: linear-gradient(to bottom, #393145, #10043a);
+$background-3: linear-gradient(to bottom, #514c5a, #3b3945);
+$success: linear-gradient(to bottom, #489732, #145123);
+$border-1: #585673;
+$border-2: #d5d4df;
+$spacing-1: 5rem;
+$spacing-2: 1rem;

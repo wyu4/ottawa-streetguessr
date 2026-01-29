@@ -1,0 +1,19 @@
+@use './Theme.scss' as *;
+
+.home {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: $spacing-1;
+    h1 {
+        margin-bottom: 10%;
+    }
+    .play {
+        button {
+            aspect-ratio: 1/1;
+            background-image: $background-3;
+            border-color: $border-1;
+        }
+    }
+}
