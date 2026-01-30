@@ -1,19 +1,48 @@
 @use './Theme.scss' as *;
 
 .home {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: $spacing-1;
+    overflow-x: none;
+    overflow-y: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: $background-1;
+    .background {
+        position: absolute;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        opacity: 0.1;
+    }
+    .widget {
+        z-index: 2;
+        padding: $spacing-2;
+    }
     h1 {
+        position: relative;
         margin-bottom: 10%;
+        z-index: 2;
     }
     .play {
         button {
-            aspect-ratio: 1/1;
+            position: relative;
             background-image: $background-3;
             border-color: $border-1;
+            padding: none;
+            font-size: 2em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     }
 }
