@@ -30,7 +30,7 @@
     }
     h1 {
         position: relative;
-        margin-bottom: 10%;
+        margin-bottom: 5%;
         z-index: 2;
     }
     .play {
@@ -38,11 +38,18 @@
             position: relative;
             background-image: $background-3;
             border-color: $border-1;
-            padding: none;
+            padding: $spacing-3;
+            padding-left: $spacing-2;
+            padding-right: $spacing-2;
             font-size: 2em;
             display: flex;
             justify-content: center;
             align-items: center;
+            div {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
         }
     }
 }
