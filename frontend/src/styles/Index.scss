@@ -6,6 +6,15 @@
     overflow-y: hidden;
 }
 
+.main {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-image: $background-4;
+}
+
 p, h1, h2, h3, button {
     color: #fcf9ff;
 }

@@ -5,9 +5,16 @@ import { FaCanadianMapleLeaf } from "react-icons/fa";
 import PushButton from "../components/PushButton";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { useRef } from "react";
-export default function Home() {
+import { useRef, useState } from "react";
+import { TabID } from "../enums/Tab";
+import type { HomeTabAttributes } from "../global/Tab";
+export default function Home({
+    currentTab = TabID.None,
+    onPlay = () => {},
+}: HomeTabAttributes) {
+    const homeRef = useRef<HTMLDivElement>(null);
     const backgroundRef = useRef<HTMLImageElement>(null);
+    const [playDebounce, setPlayDebounce] = useState(false);
 
     useGSAP(() => {
         gsap.to(backgroundRef.current, {
@@ -19,8 +26,28 @@ export default function Home() {
         });
     }, [backgroundRef]);
 
+    const handlePlay = () => {
+        if (playDebounce) {
+            return;
+        }
+        setPlayDebounce(true);
+
+        const onPlayFinish = () => {
+            setPlayDebounce(false);
+            onPlay();
+        };
+
+        gsap.to(homeRef.current, {
+            opacity: 0,
+            duration: 1,
+            ease: "power2.out",
+            overwrite: "auto",
+            onComplete: onPlayFinish,
+        });
+    };
+
     return (
-        <div className="home">
+        <div className="home" ref={homeRef}>
             <img
                 ref={backgroundRef}
                 className="background"
@@ -30,18 +57,25 @@ export default function Home() {
             <div className="title">
                 <h1>Ot</h1>
                 <h1 className="white">t</h1>
-                <h1><FaCanadianMapleLeaf color="#fc8282" className="leaf" /></h1>
-                <h1 className="white">w</h1><h1>a Street</h1><h1 className="white">Guessr</h1>
+                <h1>
+                    <FaCanadianMapleLeaf color="#fc8282" className="leaf" />
+                </h1>
+                <h1 className="white">w</h1>
+                <h1>a Street</h1>
+                <h1 className="white">Guessr</h1>
             </div>
             <p>How well do you know the streets of Ottawa?</p>
-            <PlayWidget />
+            <PlayWidget
+                onClick={handlePlay}
+                disabled={currentTab != TabID.Home}
+            />
         </div>
     );
 }
 
-function PlayWidget() {
+function PlayWidget({ onClick, disabled = false }: PushButtonAttributes) {
     return (
-        <PushButton>
+        <PushButton onClick={onClick} disabled={disabled}>
             <div className="icon">
                 <BsCameraFill color="#ffffff" />
             </div>

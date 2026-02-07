@@ -9,13 +9,18 @@ export default function PushButton({
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
-}: ButtonAttributes) {
+    onClick,
+    disabled = false,
+}: PushButtonAttributes) {
     const playButtonRef = useRef<HTMLButtonElement>(null);
     const [hovering, setHovering] = useState(false);
     const [down, setDown] = useState(false);
+    const [cursor, setCursor] = useState("default");
 
     useGSAP(() => {
         if (hovering) {
+            if (disabled) return;
+            setCursor("pointer");
             if (down) {
                 gsap.to(playButtonRef.current, {
                     scale: 0.9,
@@ -32,6 +37,7 @@ export default function PushButton({
                 overwrite: "auto",
             });
         } else {
+            setCursor("default");
             gsap.to(playButtonRef.current, {
                 scale: 1,
                 duration: 0.3,
@@ -61,6 +67,12 @@ export default function PushButton({
         setDown(false);
         onMouseUp?.(event);
     };
+
+    const handleMouseClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (disabled) return;
+        onClick?.(event);
+    };
+
     return (
         <button
             className={className}
@@ -69,6 +81,10 @@ export default function PushButton({
             onMouseLeave={handleMouseLeave}
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
+            onClick={handleMouseClick}
+            style={{
+                cursor: cursor,
+            }}
         >
             {children}
         </button>

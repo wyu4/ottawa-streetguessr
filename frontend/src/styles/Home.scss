@@ -9,11 +9,11 @@
     overflow-x: none;
     overflow-y: none;
     position: absolute;
+    background: $background-1;
     top: 0;
     left: 0;
     bottom: 0;
     right: 0;
-    background-image: $background-1;
     .background {
         position: absolute;
         z-index: 1;
@@ -63,8 +63,8 @@
     }
     p {
         position: relative;
-        margin-top: -2.5%;
-        margin-bottom: 10%;
+        margin-top: -1.5%;
+        margin-bottom: 5%;
         z-index: 2;
         font-weight: bold;
         filter: drop-shadow(0 0 5px black);
