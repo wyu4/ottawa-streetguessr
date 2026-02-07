@@ -1,5 +1,4 @@
 import "../styles/Home.scss";
-import Widget from "../components/Widget";
 import Parliament from "/Parliament.webp";
 import { BsCameraFill } from "react-icons/bs";
 import { FaCanadianMapleLeaf } from "react-icons/fa";
