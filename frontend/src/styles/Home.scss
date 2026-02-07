@@ -23,6 +23,15 @@
         object-position: center;
         opacity: 0;
     }
+    .credit {
+        position: absolute;
+        text-align: right;
+        right: 1em;
+        bottom: 0;
+        z-index: 2;
+        font-size: 0.75em;
+        font-style: italic;
+    }
     .widget {
         z-index: 2;
         padding: $spacing-2;
@@ -69,7 +78,7 @@
             color: #ffffff;
         }
     }
-    p {
+    h2 {
         position: relative;
         margin-top: -1.5%;
         margin-bottom: 5%;

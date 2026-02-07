@@ -15,7 +15,7 @@
     background-image: $background-1;
 }
 
-p, h1, h2, h3, button {
+p, h1, h2, h3, button, a {
     color: #fcf9ff;
 }
 
@@ -25,10 +25,21 @@ h1 {
     text-align: center;
 }
 
-p {
+h2 {
     font-family: $paragraph;
     font-size: 1.5rem;
     text-align: center;
+}
+
+p {
+    font-family: $paragraph;
+    font-size: 1rem;
+}
+
+a {
+    font-family: $paragraph;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 button {
