@@ -2,13 +2,13 @@ import "../styles/Home.scss";
 import Parliament from "/Parliament.webp";
 import { BsCameraFill } from "react-icons/bs";
 import { FaCanadianMapleLeaf } from "react-icons/fa";
-import PushButton from "../components/PushButton";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useRef, useState, type Ref } from "react";
 import { TabID } from "../enums/Tab";
 import type { HomeTabAttributes } from "../global/Tab";
 import { SplitText } from "gsap/all";
+import PushButton from "../components/PushButton";
 
 export default function Home({
     currentTab = TabID.None,
