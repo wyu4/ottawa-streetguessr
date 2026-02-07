@@ -1,0 +1,19 @@
+@use "./Theme.scss" as *;
+
+.game {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    p {
+        text-align: center;
+    }
+    .guide {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+    }
+}

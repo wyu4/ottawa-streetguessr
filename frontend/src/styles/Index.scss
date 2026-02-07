@@ -43,11 +43,20 @@ a {
 }
 
 button {
+    z-index: 2;
     border-radius: 1000vw;
     font-family: $paragraph;
     font-size: 1.2em;
-    background-image: $success;
     border-width: 2px;
     border-style: solid;
     will-change: transform;
+    background-image: $background-3;
+    border-color: $border-1;
+    padding: $spacing-3;
+    padding-left: $spacing-1;
+    padding-right: $spacing-1;
+    font-size: 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

@@ -156,9 +156,7 @@ const PlayWidget = forwardRef<HTMLButtonElement, PushButtonAttributes>(
     ({ onClick, disabled = false }, ref) => {
         return (
             <PushButton ref={ref} onClick={onClick} disabled={disabled}>
-                <div className="icon">
-                    <BsCameraFill color="#ffffff" />
-                </div>
+                <BsCameraFill color="#ffffff" />
             </PushButton>
         );
     },

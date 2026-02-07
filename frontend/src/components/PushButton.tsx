@@ -13,6 +13,8 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
             onMouseLeave,
             onClick,
             disabled = false,
+            style = {},
+            ...props
         },
         forwardedRef,
     ) => {
@@ -102,8 +104,10 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
                 onMouseUp={handleMouseUp}
                 onClick={handleMouseClick}
                 style={{
+                    ...style,
                     cursor: cursor,
                 }}
+                {...props}
             >
                 {children}
             </button>
