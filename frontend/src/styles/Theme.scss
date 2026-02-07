@@ -1,6 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Saira:ital,wght@0,100..900;1,100..900&display=swap");
 
 $title: "Bungee", sans-serif;
+$heading: "Saira", sans-serif;
 $paragraph: "Nunito", sans-serif;
 $radius: 10px;
 $background-1: linear-gradient(to right, #000000, #2c2c2c, #000000);
@@ -9,6 +10,7 @@ $background-3: linear-gradient(to bottom, #393939, #3d3d3d);
 $success: linear-gradient(to bottom, #489732, #145123);
 $border-1: #a1a1a1;
 $border-2: #d5d4df;
+$red-1: #ff8484;
 $spacing-1: 5rem;
 $spacing-2: 3rem;
 $spacing-3: 1rem;
