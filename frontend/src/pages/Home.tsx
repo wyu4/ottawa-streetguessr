@@ -4,7 +4,7 @@ import { BsCameraFill } from "react-icons/bs";
 import { FaCanadianMapleLeaf } from "react-icons/fa";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { useRef, useState, type Ref } from "react";
+import { forwardRef, useRef, useState } from "react";
 import { TabID } from "../enums/Tab";
 import type { HomeTabAttributes } from "../global/Tab";
 import { SplitText } from "gsap/all";
@@ -16,10 +16,7 @@ export default function Home({
 }: HomeTabAttributes) {
     const homeRef = useRef<HTMLDivElement>(null);
     const backgroundRef = useRef<HTMLImageElement>(null);
-    const titleRefs = [
-        useRef<HTMLDivElement>(null),
-        useRef<HTMLDivElement>(null),
-    ];
+    const titleRefs = useRef<HTMLDivElement[]>([]);
     const subtitleRef = useRef<HTMLParagraphElement>(null);
     const playRef = useRef<HTMLButtonElement>(null);
     const [playDebounce, setPlayDebounce] = useState(true);
@@ -28,7 +25,6 @@ export default function Home({
         const subtitleText = new SplitText(subtitleRef.current, {
             type: "words",
         });
-        const title = titleRefs.map((ref) => ref.current);
 
         gsap.set(backgroundRef.current, {
             scale: 1.4,
@@ -41,11 +37,11 @@ export default function Home({
             overwrite: "auto",
         });
 
-        gsap.set(title, {
+        gsap.set(titleRefs.current, {
             translateY: "-100%",
             opacity: 0,
         });
-        gsap.to(title, {
+        gsap.to(titleRefs.current, {
             translateY: 0,
             opacity: 1,
             duration: 2,
@@ -112,7 +108,11 @@ export default function Home({
                 draggable={false}
             />
             <div className="title">
-                <div ref={titleRefs[0]}>
+                <div
+                    ref={(node) => {
+                        titleRefs.current[0] = node!;
+                    }}
+                >
                     <h1>Ot</h1>
                     <h1 className="white">t</h1>
                     <h1>
@@ -121,7 +121,11 @@ export default function Home({
                     <h1 className="white">w</h1>
                     <h1>a</h1>
                 </div>
-                <div ref={titleRefs[1]}>
+                <div
+                    ref={(node) => {
+                        titleRefs.current[1] = node!;
+                    }}
+                >
                     <h1> Street</h1>
                     <h1 className="white">Guessr</h1>
                 </div>
@@ -136,16 +140,14 @@ export default function Home({
     );
 }
 
-function PlayWidget({
-    onClick,
-    disabled = false,
-    ref = null,
-}: PushButtonAttributes) {
-    return (
-        <PushButton ref={ref} onClick={onClick} disabled={disabled}>
-            <div className="icon">
-                <BsCameraFill color="#ffffff" />
-            </div>
-        </PushButton>
-    );
-}
+const PlayWidget = forwardRef<HTMLButtonElement, PushButtonAttributes>(
+    ({ onClick, disabled = false }, ref) => {
+        return (
+            <PushButton ref={ref} onClick={onClick} disabled={disabled}>
+                <div className="icon">
+                    <BsCameraFill color="#ffffff" />
+                </div>
+            </PushButton>
+        );
+    },
+);

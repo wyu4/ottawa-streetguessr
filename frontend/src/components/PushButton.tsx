@@ -89,7 +89,7 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
             <button
                 className={`pushbutton ${className}`}
                 ref={(node) => {
-                    playButtonRef.current = node;
+                    playButtonRef.current = node!;
                     if (forwardedRef) {
                         if (typeof forwardedRef === "function")
                             forwardedRef(node);

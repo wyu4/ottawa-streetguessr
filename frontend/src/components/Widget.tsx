@@ -1,8 +1,14 @@
+import { forwardRef } from "react";
 import "../styles/Widget.scss";
 
-export default function Widget({
-    children,
-    className = "",
-}: DivAttributes) {
-    return <div className={`widget ${className}`}>{children}</div>;
-}
+const Widget = forwardRef<HTMLDivElement, DivAttributes>(
+    ({ children, className = "" }, ref) => {
+        return (
+            <div ref={ref} className={`widget ${className}`}>
+                {children}
+            </div>
+        );
+    },
+);
+
+export default Widget;
