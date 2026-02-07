@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Guide from "../components/Guide";
 import "./../styles/Game.scss";
+import SelectableMap from "../components/SelectableMap";
+import Widget from "../components/Widget";
 
 export default function Game({ onHome = () => {} }: GameTabAttributes) {
     const [guideEnabled, setGuideEnabled] = useState(false);
@@ -27,7 +29,7 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
 
     const sourceType = useRef<string>("image/jpeg");
     const [started, setStarted] = useState(false);
-    const [source, setSource] = useState("/Parliament.webp");
+    const [source, setSource] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         const socket = new WebSocket(
@@ -108,7 +110,9 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
             <div className="feed">
                 <img src={source} draggable={false} />
             </div>
-            <div className="map"></div>
+            <Widget className="map">
+                <SelectableMap />
+            </Widget>
         </div>
     );
 };
