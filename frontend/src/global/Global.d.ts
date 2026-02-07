@@ -1,3 +1,3 @@
-declare type DivAttributes = React.ComponentPropsWithRef<"div">;
-declare type ButtonAttributes = React.ComponentPropsWithRef<"button">;
-declare type ParagraphAttributes = React.ComponentPropsWithRef<"p">;
+declare type DivAttributes = React.ComponentPropsWithoutRef<"div">;
+declare type ButtonAttributes = React.ComponentPropsWithoutRef<"button">;
+declare type ParagraphAttributes = React.ComponentPropsWithoutRef<"p">;

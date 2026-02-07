@@ -13,8 +13,11 @@ function App() {
     const navigate = useNavigate();
 
     const onPlay = () => {
-        console.log("Playing...");
         navigate(Tabs.Game);
+    };
+
+    const onHome = () => {
+        navigate(Tabs.Home);
     };
 
     return (
@@ -29,7 +32,10 @@ function App() {
                         path={Tabs.Home}
                         element={<Home onPlay={onPlay} />}
                     />
-                    <Route path={Tabs.Game} element={<Game />} />
+                    <Route
+                        path={Tabs.Game}
+                        element={<Game onHome={onHome} />}
+                    />
                 </Routes>
             </div>
         </>

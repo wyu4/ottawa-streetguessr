@@ -87,9 +87,7 @@ export default function Home({ onPlay = () => {} }: HomeTabAttributes) {
     }, []);
 
     const handlePlay = () => {
-        if (playDebounce) {
-            return;
-        }
+        if (playDebounce) return;
         setPlayDebounce(true);
         gsap.to(homeRef.current, {
             opacity: 0,

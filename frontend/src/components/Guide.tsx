@@ -1,4 +1,4 @@
-import { forwardRef, useRef } from "react";
+import { forwardRef, useRef, useState } from "react";
 
 import { FaCheck } from "react-icons/fa";
 import PushButton from "./PushButton";
@@ -8,12 +8,14 @@ import gsap from "gsap";
 import { SplitText } from "gsap/all";
 import { useGSAP } from "@gsap/react";
 
-const Guide = forwardRef<HTMLDivElement, DivAttributes>(
-    ({ className = "", ...props }, ref) => {
+const Guide = forwardRef<HTMLDivElement, GuideAttributes>(
+    ({ className = "", onAccept = () => {}, ...props }, ref) => {
+        const [acceptDisabled, setAcceptDisabled] = useState(true);
+        const [debounce, setDebounce] = useState(false);
         const titleRef = useRef<HTMLHeadingElement>(null);
         const paragraphRef = useRef<HTMLParagraphElement[]>([]);
         const timeRef = useRef<HTMLDivElement>(null);
-        const playRef = useRef<HTMLButtonElement>(null);
+        const acceptRef = useRef<HTMLButtonElement>(null);
 
         useGSAP(() => {
             const paragraphText = new SplitText(paragraphRef.current, {
@@ -36,7 +38,7 @@ const Guide = forwardRef<HTMLDivElement, DivAttributes>(
             gsap.set(timeRef.current, {
                 opacity: 0,
             });
-            gsap.set(playRef.current, {
+            gsap.set(acceptRef.current, {
                 opacity: 0,
             });
 
@@ -53,6 +55,7 @@ const Guide = forwardRef<HTMLDivElement, DivAttributes>(
                 ease: "back.out",
                 overwrite: "auto",
                 onComplete: () => {
+                    setAcceptDisabled(false);
                     gsap.to(timeRef.current, {
                         opacity: 0.75,
                         duration: 2,
@@ -60,7 +63,7 @@ const Guide = forwardRef<HTMLDivElement, DivAttributes>(
                         ease: "back.out",
                         overwrite: "auto",
                     });
-                    gsap.to(playRef.current, {
+                    gsap.to(acceptRef.current, {
                         opacity: 1,
                         duration: 2,
                         delay: 1,
@@ -70,6 +73,36 @@ const Guide = forwardRef<HTMLDivElement, DivAttributes>(
                 },
             });
         });
+
+        useGSAP(() => {
+            if (!debounce) return;
+            gsap.to(
+                [
+                    titleRef.current,
+                    ...paragraphRef.current,
+                    timeRef.current,
+                    acceptRef.current,
+                ],
+                {
+                    opacity: 0,
+                    duration: 0.5,
+                    stagger: {
+                        each: 0.25,
+                        from: "random",
+                    },
+                    ease: "sine.out",
+                    overwrite: "auto",
+                    onComplete: () => {
+                        onAccept();
+                    },
+                },
+            );
+        }, [debounce]);
+
+        const handleAccept = () => {
+            if (debounce) return;
+            setDebounce(true);
+        };
 
         return (
             <div ref={ref} className={`guide ${className}`} {...props}>
@@ -95,7 +128,11 @@ const Guide = forwardRef<HTMLDivElement, DivAttributes>(
                         <Clock />
                     </b>
                 </div>
-                <PushButton ref={playRef}>
+                <PushButton
+                    ref={acceptRef}
+                    onClick={handleAccept}
+                    disabled={acceptDisabled}
+                >
                     <FaCheck color="#ffffff" />
                 </PushButton>
             </div>
