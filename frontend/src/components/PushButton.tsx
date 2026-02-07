@@ -11,8 +11,9 @@ export default function PushButton({
     onMouseLeave,
     onClick,
     disabled = false,
+    ref=null
 }: PushButtonAttributes) {
-    const playButtonRef = useRef<HTMLButtonElement>(null);
+    const playButtonRef = ref == null ? useRef<HTMLButtonElement>(null) : ref;
     const [hovering, setHovering] = useState(false);
     const [down, setDown] = useState(false);
     const [cursor, setCursor] = useState("default");
@@ -75,7 +76,7 @@ export default function PushButton({
 
     return (
         <button
-            className={className}
+            className={`pushbutton ${className}`}
             ref={playButtonRef}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}

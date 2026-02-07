@@ -38,4 +38,5 @@ button {
     background-image: $success;
     border-width: 2px;
     border-style: solid;
+    will-change: transform;
 }
