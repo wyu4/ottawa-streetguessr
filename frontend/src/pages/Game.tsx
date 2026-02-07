@@ -5,7 +5,7 @@ import SelectableMap from "../components/SelectableMap";
 import Widget from "../components/Widget";
 
 export default function Game({ onHome = () => {} }: GameTabAttributes) {
-    const [guideEnabled, setGuideEnabled] = useState(false);
+    const [guideEnabled, setGuideEnabled] = useState(true);
 
     const handleGuideAccept = () => {
         setGuideEnabled(false);
