@@ -13,6 +13,8 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
             onMouseLeave,
             onClick,
             disabled = false,
+            style = {},
+            ...props
         },
         forwardedRef,
     ) => {
@@ -89,7 +91,7 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
             <button
                 className={`pushbutton ${className}`}
                 ref={(node) => {
-                    playButtonRef.current = node;
+                    playButtonRef.current = node!;
                     if (forwardedRef) {
                         if (typeof forwardedRef === "function")
                             forwardedRef(node);
@@ -102,8 +104,10 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
                 onMouseUp={handleMouseUp}
                 onClick={handleMouseClick}
                 style={{
+                    ...style,
                     cursor: cursor,
                 }}
+                {...props}
             >
                 {children}
             </button>

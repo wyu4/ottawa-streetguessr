@@ -1,9 +1,7 @@
-import { TabID } from "../enums/Tab";
-
-declare type TabAttributes = DivAttributes & {
-    currentTab?: TabID;
+declare type HomeTabAttributes = DivAttributes & {
+    onPlay?: () => void;
 };
 
-declare type HomeTabAttributes = TabAttributes & {
-    onPlay?: () => void;
+declare type GameTabAttributes = DivAttributes & {
+    onHome?: () => void;
 };

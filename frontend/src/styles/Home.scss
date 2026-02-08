@@ -9,7 +9,7 @@
     overflow-x: none;
     overflow-y: none;
     position: absolute;
-    background: $background-1;
+    background: none;
     top: 0;
     left: 0;
     bottom: 0;
@@ -22,6 +22,15 @@
         object-fit: cover;
         object-position: center;
         opacity: 0;
+    }
+    .credit {
+        position: absolute;
+        text-align: right;
+        right: 1em;
+        bottom: 0;
+        z-index: 2;
+        font-size: 0.75em;
+        font-style: italic;
     }
     .widget {
         z-index: 2;
@@ -69,7 +78,7 @@
             color: #ffffff;
         }
     }
-    p {
+    h2 {
         position: relative;
         margin-top: -1.5%;
         margin-bottom: 5%;
@@ -78,21 +87,6 @@
         filter: drop-shadow(0 0 5px black);
     }
     button {
-        z-index: 2;
         position: relative;
-        background-image: $background-3;
-        border-color: $border-1;
-        padding: $spacing-3;
-        padding-left: $spacing-1;
-        padding-right: $spacing-1;
-        font-size: 2em;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        div {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
     }
 }
