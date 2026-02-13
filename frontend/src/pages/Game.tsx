@@ -13,7 +13,7 @@ import { RiResetLeftFill } from "react-icons/ri";
 import type { LatLngExpression } from "leaflet";
 
 export default function Game({ onHome = () => {} }: GameTabAttributes) {
-    const [guideEnabled, setGuideEnabled] = useState(false);
+    const [guideEnabled, setGuideEnabled] = useState(true);
 
     const handleGuideAccept = () => {
         setGuideEnabled(false);
