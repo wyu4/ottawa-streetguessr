@@ -28,6 +28,7 @@ const Gameplay = ({
     const [gameEnabled, setGameEnabled] = useState(true);
     const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
+    const [startTime, setStartTime] = useState(-1);
     const [source, setSource] = useState<string | undefined>(undefined);
     const [loaded, setLoaded] = useState(false);
     const [time, setTime] = useState(0);
@@ -59,6 +60,8 @@ const Gameplay = ({
         setGameEnabled(false);
         onGuess(selection);
     };
+
+    const getCurrentTime = () => Math.floor(Date.now() / 1000);
 
     useEffect(() => {
         if (!gameEnabled) {
@@ -99,6 +102,7 @@ const Gameplay = ({
                     sourceType.current = parsed.content!;
                 } else if (parsed.type === "game") {
                     setStarted(true);
+                    setStartTime(getCurrentTime);
                 }
             } else {
                 const blob = new Blob([message.data], {
@@ -149,6 +153,28 @@ const Gameplay = ({
             clearInterval(refreshInterval);
         };
     }, [connected, started]);
+
+    useEffect(() => {
+        if (startTime < 0) return;
+
+        const refresh = () => {
+            if (!started) return;
+            const newTime = 2 * 60 - (getCurrentTime() - startTime);
+            if (newTime < 0) {
+                setGameEnabled(false);
+                onGuess(selection);
+                return;
+            };
+            setTime(newTime);
+        };
+        refresh();
+
+        const refreshInterval = setInterval(refresh, 100);
+
+        return () => {
+            clearInterval(refreshInterval);
+        };
+    }, [startTime]);
 
     useGSAP(
         () => {
