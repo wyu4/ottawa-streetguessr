@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import { useEffect, useRef, useState } from "react";
 import type { LatLngExpression } from "leaflet";
 import { LuClipboardCheck } from "react-icons/lu";
+import gsap from "gsap";
 
 const Gameplay = ({
     className = "",
