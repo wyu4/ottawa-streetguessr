@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 function MapViewController({
     zoom = 7,
     center = [45.2501659, -76.1298876],
+    lastReset = 0,
     onSelection = () => {},
 }: SelectableMapAttributes) {
     const map = useMap();
@@ -15,26 +16,26 @@ function MapViewController({
             onSelection(event.latlng.lat, event.latlng.lng);
         };
         map.on("click", onMapClick);
-    }, [map]);
+        return () => {
+            map.off("click", onMapClick);
+        };
+    }, [map, onSelection]);
 
     useEffect(() => {
-        if (map.getZoom() !== zoom) {
-            map.setZoom(zoom);
-        }
-        if (map.getCenter() !== center) {
-            map.setView(center);
-        }
-    }, [center, zoom, map]);
+        map.setZoom(zoom);
+        map.setView(center);
+    }, [lastReset, map]);
 
     return null;
 }
 
 export default function SelectableMap({
-    zoom = 7,
+    zoom = 8,
+    center = [45.40616374516014, -75.69580078125001],
+    lastReset = 0,
     selectionEnabled = false,
-    onSelection = () => {},
+    onSelection = () => {}
 }: SelectableMapAttributes) {
-    const defaultCenter: LatLngExpression = [45.2501659, -76.1298876];
     const [markerPosition, setMarkerPosition] =
         useState<LatLngExpression | null>(null);
 
@@ -51,8 +52,8 @@ export default function SelectableMap({
 
     return (
         <MapContainer
-            center={defaultCenter}
-            zoom={7}
+            center={center}
+            zoom={zoom}
             scrollWheelZoom={true}
             attributionControl={false}
             className="selectable-map"
@@ -63,7 +64,12 @@ export default function SelectableMap({
                 <Marker position={markerPosition} icon={markerIcon}></Marker>
             )}
 
-            <MapViewController zoom={zoom} center={defaultCenter} onSelection={handleSelection} />
+            <MapViewController
+                zoom={zoom}
+                center={center}
+                onSelection={handleSelection}
+                lastReset={lastReset}
+            />
         </MapContainer>
     );
 }
