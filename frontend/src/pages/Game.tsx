@@ -8,12 +8,13 @@ import gsap from "gsap";
 import PushButton from "../components/PushButton";
 import { LuClipboardCheck } from "react-icons/lu";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { IoIosSkipForward } from "react-icons/io";
 import { RiResetLeftFill } from "react-icons/ri";
 import type { LatLngExpression } from "leaflet";
+import { FaCheck } from "react-icons/fa6";
+import { FaXmark } from "react-icons/fa6";
 
 export default function Game({ onHome = () => {} }: GameTabAttributes) {
-    const [guideEnabled, setGuideEnabled] = useState(true);
+    const [guideEnabled, setGuideEnabled] = useState(false);
 
     const handleGuideAccept = () => {
         setGuideEnabled(false);
@@ -42,14 +43,25 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
     const gameplayRef = useRef<HTMLDivElement>(null);
 
     const sourceType = useRef<string>("image/webp");
+    const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
     const [source, setSource] = useState<string | undefined>(undefined);
     const [loaded, setLoaded] = useState(false);
-    const [time, setTime] = useState("0:00");
+    const [time, setTime] = useState(0);
     const [lastReset, setLastReset] = useState(0);
+    const [sourceIsValid, setSourceIsValid] = useState(true);
 
     const handleReset = () => {
         setLastReset(Date.now());
+    };
+
+    const handleCancelSkip = () => {
+        setSourceIsValid(true);
+    };
+
+    const handleSkip = () => {
+        setSourceIsValid(true);
+        setStarted(false);
     };
 
     useEffect(() => {
@@ -65,6 +77,7 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
         };
 
         socket.onopen = () => {
+            setConnected(true);
             sendMessage({
                 type: "start",
             });
@@ -78,6 +91,11 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
                     return;
                 }
                 if (parsed.type === "feed") {
+                    if (parsed.message == "invalid") {
+                        setSourceIsValid(false);
+                        return;
+                    }
+                    setSourceIsValid(true);
                     sourceType.current = parsed.content!;
                 } else if (parsed.type === "game") {
                     setStarted(true);
@@ -92,6 +110,7 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
         };
 
         socket.onclose = () => {
+            setConnected(false);
             console.log("Lost connection...");
         };
 
@@ -106,15 +125,20 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
     }, [WebsocketUrl]);
 
     useEffect(() => {
-        if (!started || websocketRef.current == null) return;
+        if (websocketRef.current == null || !connected) return;
 
         const socket = websocketRef.current;
-
         const sendMessage = (json: GamePayload) => {
             socket.send(JSON.stringify(json));
         };
 
+        if (!started) {
+            sendMessage({ type: "roll" });
+            return;
+        }
+
         const refresh = () => {
+            if (!sourceIsValid) return;
             sendMessage({ type: "feed" });
         };
         refresh();
@@ -124,7 +148,7 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [started]);
+    }, [connected, started]);
 
     useGSAP(
         () => {
@@ -143,6 +167,11 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
                 repeat: -1,
                 ease: "none",
             });
+            gsap.set(".skip", {
+                translateY: "-100%",
+                opacity: 0,
+            });
+            return;
         },
         { dependencies: [], scope: gameplayRef },
     );
@@ -165,8 +194,42 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
         { dependencies: [loaded], scope: gameplayRef },
     );
 
+    useGSAP(
+        () => {
+            if (sourceIsValid) {
+                gsap.to(".skip", {
+                    translateY: "-100%",
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    overwrite: "auto",
+                });
+                return;
+            }
+            gsap.to(".skip", {
+                translateY: 0,
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out",
+                overwrite: "auto",
+            });
+        },
+        { dependencies: [sourceIsValid], scope: gameplayRef },
+    );
+
     const handleLoad = () => {
         setLoaded(true);
+    };
+
+    const formatTime = (totalSeconds: number) => {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        // Use String.padStart() to ensure two digits for seconds
+        const formattedMinutes = String(minutes).padStart(1, "0");
+        const formattedSeconds = String(seconds).padStart(2, "0");
+
+        return `${formattedMinutes}:${formattedSeconds}`;
     };
 
     return (
@@ -180,7 +243,24 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
             <div className="interface">
                 <div className="top">
                     <div className="timer">
-                        <p>{time}</p>
+                        <p>{formatTime(time)}</p>
+                    </div>
+                    <div className="skip">
+                        <p>Something might be wrong with the feed. Skip?</p>
+                        <div>
+                            <PushButton
+                                disabled={sourceIsValid}
+                                onClick={handleCancelSkip}
+                            >
+                                <FaXmark color="#ffffff" />
+                            </PushButton>
+                            <PushButton
+                                disabled={sourceIsValid}
+                                onClick={handleSkip}
+                            >
+                                <FaCheck color="#ffffff" />
+                            </PushButton>
+                        </div>
                     </div>
                 </div>
                 <div className="side">
@@ -200,9 +280,6 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
                             </PushButton>
                         </div>
                     </Widget>
-                    <PushButton className="skip">
-                        <IoIosSkipForward color="#ffffff" />
-                    </PushButton>
                 </div>
             </div>
         </div>

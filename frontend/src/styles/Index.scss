@@ -1,4 +1,4 @@
-@use './Theme.scss' as *;
+@use "./Theme.scss" as *;
 
 :root {
     background-color: black;
@@ -15,7 +15,12 @@
     background-image: $background-1;
 }
 
-p, h1, h2, h3, button, a {
+p,
+h1,
+h2,
+h3,
+button,
+a {
     color: #fcf9ff;
 }
 

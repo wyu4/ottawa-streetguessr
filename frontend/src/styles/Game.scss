@@ -64,6 +64,7 @@
             .top {
                 padding-top: $spacing-3;
                 display: flex;
+                flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 .timer {
@@ -81,6 +82,38 @@
                         font: inherit;
                         height: 0.01em;
                         line-height: 0;
+                    }
+                }
+
+                .skip {
+                    position: absolute;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    font-size: 2rem;
+                    background-image: linear-gradient(to bottom, #000000d9, #00000000);
+                    left: 0;
+                    right: 0;
+                    top: 0;
+                    min-height: 30%;
+                    padding-bottom: 5%;
+                    div {
+                        display: flex;
+                        flex-direction: row;
+                        flex-wrap: nowrap;
+                        justify-content: center;
+                        align-items: center;
+                        gap: 100%;
+                    }
+                    p {
+                        font-size: inherit;
+                    }
+                    button {
+                        font-size: inherit;
+                        border-width: 0;
+                        background: none;
+                        padding: 0;
                     }
                 }
             }

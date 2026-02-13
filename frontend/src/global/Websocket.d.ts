@@ -1,5 +1,5 @@
 declare type GamePayload = {
-    type: "start" | "guess" | "feed";
+    type: "start" | "guess" | "feed" | "roll";
 };
 
 declare type GameResponsePayload = {
