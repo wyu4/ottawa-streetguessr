@@ -53,7 +53,13 @@ function getCurrentTime() {
     return Math.floor(Date.now() / 1000);
 }
 
-app.get("/api/enabled", (_, res) => res.send(isEnabled()));
+app.get("/api/enabled", (req, res) => {
+    const response = isEnabled();
+    console.log(
+        `<<< API/ENABLED: Received ping from ${req.ip}. Response: ${response}`,
+    );
+    res.send(response);
+});
 
 webSocketServer.on("connection", (ws, req) => {
     let playing = false;
@@ -65,11 +71,13 @@ webSocketServer.on("connection", (ws, req) => {
     };
     let lastFeedRequest = 0;
     let gameStart = 0;
+    let eligibleForRoll = false;
 
     const feedRateLimit = 17;
     const gameTimeout = 2.5 * 60;
 
     const resetGame = () => {
+        playing = false;
         currentGame = {
             lat: 0,
             name: "",
@@ -77,6 +85,8 @@ webSocketServer.on("connection", (ws, req) => {
             feed: "",
         };
         lastFeedRequest = 0;
+        gameStart = 0;
+        eligibleForRoll = false;
     };
 
     console.log(`<<< Websocket connection from ${req.socket.remoteAddress}`);
@@ -106,10 +116,10 @@ webSocketServer.on("connection", (ws, req) => {
             `<<< Websocket received message from ${req.socket.remoteAddress}: ${data.toString()}`,
         );
 
-        // Start a game
-        if (parsed.type === "start" && !playing) {
+        const roll = () => {
             playing = true;
             gameStart = currentTime;
+            eligibleForRoll = false;
 
             try {
                 const chosen =
@@ -118,6 +128,7 @@ webSocketServer.on("connection", (ws, req) => {
                 currentGame.name = chosen.name;
                 currentGame.lon = chosen.longitude;
                 currentGame.feed = `https://traffic.ottawa.ca/camera?id=${chosen.id}`;
+                // currentGame.feed = `https://traffic.ottawa.ca/camera?id=412`;
 
                 return ws.send(
                     JSON.stringify({
@@ -139,6 +150,14 @@ webSocketServer.on("connection", (ws, req) => {
 
             playing = false;
             gameStart = 0;
+        };
+
+        // Start a game
+        if (parsed.type === "start" && !playing) {
+            roll();
+        } else if (parsed.type === "roll" && playing && eligibleForRoll) {
+            resetGame();
+            roll();
         } else if (parsed.type === "guess" && playing) {
             try {
                 ws.send(
@@ -203,6 +222,67 @@ webSocketServer.on("connection", (ws, req) => {
                         }),
                     );
                     ws.send(compressedBuffer);
+
+                    const currentFeedRequest = lastFeedRequest;
+                    const validationSize = 100;
+                    const validationCanvas = createCanvas(
+                        validationSize,
+                        validationSize,
+                    );
+                    const validationCtx = validationCanvas.getContext("2d");
+                    validationCtx.drawImage(
+                        image,
+                        0,
+                        0,
+                        validationSize,
+                        validationSize,
+                    );
+
+                    const imageData = validationCtx.getImageData(
+                        0,
+                        0,
+                        validationSize,
+                        validationSize,
+                    );
+
+                    const colorCounts = new Map();
+                    let pixelCount = 0;
+
+                    for (let i = 0; i < imageData.data.length; i += 4) {
+                        if (lastFeedRequest != currentFeedRequest) {
+                            return;
+                        }
+
+                        const red = Math.floor(imageData.data[i] / 16) * 16;
+                        const green =
+                            Math.floor(imageData.data[i + 1] / 16) * 16;
+                        const blue =
+                            Math.floor(imageData.data[i + 2] / 16) * 16;
+                        const color = `${red},${green},${blue}`;
+                        const currentCount = colorCounts.get(color);
+                        colorCounts.set(
+                            color,
+                            currentCount ? currentCount + 1 : 1,
+                        );
+                        pixelCount++;
+                    }
+
+                    let dominatingPercent = 0;
+                    if (pixelCount > 0) {
+                        dominatingPercent =
+                            Math.max(...colorCounts.values()) / pixelCount;
+                    }
+
+                    if (dominatingPercent > 0.7) {
+                        eligibleForRoll = true;
+                        ws.send(
+                            JSON.stringify({
+                                type: "feed",
+                                message: "invalid",
+                                success: true,
+                            }),
+                        );
+                    }
                 })
                 .catch((err) => {
                     console.error(err);
