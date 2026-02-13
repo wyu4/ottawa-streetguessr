@@ -1,3 +1,6 @@
 declare type SelectableMapAttributes = {
-    selection?: number[];
+    zoom?: number;
+    center?: LatLngExpression;
+    selectionEnabled?: boolean;
+    onSelection?: (latitude: number, longitude: number) => void;
 };

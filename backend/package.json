@@ -17,7 +17,8 @@
   "scripts": {
     "dev": "node src/index.js",
     "build": "echo \"Warning: no build script required for static website.\" && exit 0",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "preview": "node --env-file=.env src/index.js"
   },
   "dependencies": {
     "canvas": "^3.2.1",

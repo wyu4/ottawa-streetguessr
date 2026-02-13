@@ -24,6 +24,16 @@
         position: relative;
         width: 100%;
         height: 100%;
+        .loading {
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            font-size: 5rem;
+            object-position: center;
+        }
         .feed {
             position: absolute;
             left: 0;
@@ -44,21 +54,75 @@
                 border-width: 0;
             }
         }
-        .map {
+        .interface {
             position: absolute;
             z-index: 21;
-            right: $spacing-3;
-            bottom: $spacing-3;
-            width: min(40rem, 100vw);
-            height: min(20rem, 100vh);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            .selectable-map {
-                position: relative;
-                width: calc(100% - $spacing-2);
-                height: calc(100% - $spacing-2);
-                border-radius: inherit;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            top: 0;
+            .top {
+                padding-top: $spacing-3;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                .timer {
+                    font-family: $heading;
+                    font-size: 2em;
+                    margin: none;
+                    background-color: rgba(0, 0, 0, 0.734);
+                    border-radius: $radius;
+                    border-width: 0;
+                    padding: $spacing-3;
+                    padding-top: 0;
+                    padding-bottom: 0;
+
+                    p {
+                        font: inherit;
+                        height: 0.01em;
+                        line-height: 0;
+                    }
+                }
+            }
+            .side {
+                position: absolute;
+                right: 0;
+                bottom: 0;
+                top: 0;
+                width: min(40rem, calc(100% - 2 * $spacing-3));
+                padding: $spacing-3;
+                display: flex;
+                flex-direction: column-reverse;
+                justify-content: flex-start;
+                align-items: flex-end;
+                .map {
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    width: min(40rem, 100%);
+                    gap: $spacing-3;
+                    margin-bottom: 2em;
+                    .selectable-map {
+                        position: relative;
+                        width: 100%;
+                        height: 20rem;
+                        border-radius: inherit;
+                        z-index: 31;
+                    }
+
+                    .controls {
+                        position: absolute;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        flex-direction: row;
+                        bottom: 0;
+                        margin-bottom: -5%;
+                        gap: $spacing-3;
+                        z-index: 33;
+                    }
+                }
             }
         }
     }
