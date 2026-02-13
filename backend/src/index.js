@@ -45,7 +45,15 @@ fetch("https://traffic.ottawa.ca/map/service/camera", {
         console.error(err);
     });
 
-app.get("/api/enabled", (_, res) => res.send(enabled));
+function isEnabled() {
+    return enabled && process.env.SERVER_ENABLED === "1";
+}
+
+function getCurrentTime() {
+    return Math.floor(Date.now() / 1000);
+}
+
+app.get("/api/enabled", (_, res) => res.send(isEnabled()));
 
 webSocketServer.on("connection", (ws, req) => {
     let playing = false;
@@ -56,7 +64,10 @@ webSocketServer.on("connection", (ws, req) => {
         feed: "",
     };
     let lastFeedRequest = 0;
+    let gameStart = 0;
+
     const feedRateLimit = 17;
+    const gameTimeout = 2.5 * 60;
 
     const resetGame = () => {
         currentGame = {
@@ -71,7 +82,7 @@ webSocketServer.on("connection", (ws, req) => {
     console.log(`<<< Websocket connection from ${req.socket.remoteAddress}`);
 
     ws.on("message", async (data) => {
-        if (!enabled) {
+        if (!isEnabled()) {
             return ws.send(
                 JSON.stringify({
                     type: "error",
@@ -89,7 +100,7 @@ webSocketServer.on("connection", (ws, req) => {
             return;
         }
 
-        const currentTime = Math.floor(Date.now() / 1000);
+        const currentTime = getCurrentTime();
 
         console.log(
             `<<< Websocket received message from ${req.socket.remoteAddress}: ${data.toString()}`,
@@ -98,6 +109,7 @@ webSocketServer.on("connection", (ws, req) => {
         // Start a game
         if (parsed.type === "start" && !playing) {
             playing = true;
+            gameStart = currentTime;
 
             try {
                 const chosen =
@@ -126,6 +138,7 @@ webSocketServer.on("connection", (ws, req) => {
             }
 
             playing = false;
+            gameStart = 0;
         } else if (parsed.type === "guess" && playing) {
             try {
                 ws.send(
@@ -155,6 +168,17 @@ webSocketServer.on("connection", (ws, req) => {
             currentTime - lastFeedRequest >= feedRateLimit
         ) {
             lastFeedRequest = currentTime;
+
+            if (currentTime - gameStart > gameTimeout) {
+                return ws.send(
+                    JSON.stringify({
+                        type: "feed",
+                        message: "Failed to fetch feed: Session expired.",
+                        success: false,
+                    }),
+                );
+            }
+
             fetch(currentGame.feed, {
                 method: "GET",
                 headers: {
@@ -168,7 +192,7 @@ webSocketServer.on("connection", (ws, req) => {
                     const ctx = canvas.getContext("2d");
                     ctx.drawImage(image, 0, 0);
                     const compressedBuffer = canvas.toBuffer("image/jpeg", {
-                        quality: 0.25,
+                        quality: 0.75,
                     });
 
                     ws.send(

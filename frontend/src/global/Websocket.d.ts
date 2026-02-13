@@ -3,7 +3,7 @@ declare type GamePayload = {
 };
 
 declare type GameResponsePayload = {
-    type: "game" | "guess" | "feed";
+    type: "game" | "guess" | "feed" | "error";
     message?: string;
     success: boolean;
     answer?: number[];

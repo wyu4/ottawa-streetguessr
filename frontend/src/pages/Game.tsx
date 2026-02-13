@@ -3,9 +3,17 @@ import Guide from "../components/Guide";
 import "./../styles/Game.scss";
 import SelectableMap from "../components/SelectableMap";
 import Widget from "../components/Widget";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import PushButton from "../components/PushButton";
+import { LuClipboardCheck } from "react-icons/lu";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { IoIosSkipForward } from "react-icons/io";
+import { RiResetLeftFill } from "react-icons/ri";
+import type { LatLngExpression } from "leaflet";
 
 export default function Game({ onHome = () => {} }: GameTabAttributes) {
-    const [guideEnabled, setGuideEnabled] = useState(true);
+    const [guideEnabled, setGuideEnabled] = useState(false);
 
     const handleGuideAccept = () => {
         setGuideEnabled(false);
@@ -23,13 +31,26 @@ export default function Game({ onHome = () => {} }: GameTabAttributes) {
 }
 
 const Gameplay = ({ className = "" }: DivAttributes) => {
+    const defaultCenter: LatLngExpression = [
+        45.40616374516014, -75.69580078125001,
+    ];
+    const defaultZoom = 8;
+
     const WebsocketUrl = import.meta.env.VITE_Websocket_Url;
     const LocalWebsocketUrl = "http://localhost:3000";
     const websocketRef = useRef<WebSocket>(null);
+    const gameplayRef = useRef<HTMLDivElement>(null);
 
-    const sourceType = useRef<string>("image/jpeg");
+    const sourceType = useRef<string>("image/webp");
     const [started, setStarted] = useState(false);
     const [source, setSource] = useState<string | undefined>(undefined);
+    const [loaded, setLoaded] = useState(false);
+    const [time, setTime] = useState("0:00");
+    const [lastReset, setLastReset] = useState(0);
+
+    const handleReset = () => {
+        setLastReset(Date.now());
+    };
 
     useEffect(() => {
         const socket = new WebSocket(
@@ -105,14 +126,85 @@ const Gameplay = ({ className = "" }: DivAttributes) => {
         };
     }, [started]);
 
+    useGSAP(
+        () => {
+            gsap.set(".interface", {
+                opacity: 0,
+            });
+            gsap.to(".interface", {
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out",
+                overwrite: "auto",
+            });
+            gsap.to(".loading", {
+                rotation: "+=360cw",
+                duration: 0.75,
+                repeat: -1,
+                ease: "none",
+            });
+        },
+        { dependencies: [], scope: gameplayRef },
+    );
+
+    useGSAP(
+        () => {
+            if (!loaded) {
+                gsap.set(".feed", {
+                    opacity: 0,
+                });
+                return;
+            }
+            gsap.to(".feed", {
+                opacity: 1,
+                duration: 1,
+                ease: "power2.out",
+                overwrite: "auto",
+            });
+        },
+        { dependencies: [loaded], scope: gameplayRef },
+    );
+
+    const handleLoad = () => {
+        setLoaded(true);
+    };
+
     return (
-        <div className={`gameplay ${className}`}>
-            <div className="feed">
-                <img src={source} draggable={false} />
+        <div ref={gameplayRef} className={`gameplay ${className}`}>
+            <div className="loading">
+                <AiOutlineLoading3Quarters color="#bbbbbb" />
             </div>
-            <Widget className="map">
-                <SelectableMap />
-            </Widget>
+            <div className="feed">
+                <img src={source} draggable={false} onLoad={handleLoad} />
+            </div>
+            <div className="interface">
+                <div className="top">
+                    <div className="timer">
+                        <p>{time}</p>
+                    </div>
+                </div>
+                <div className="side">
+                    <Widget className="map">
+                        <SelectableMap
+                            zoom={defaultZoom}
+                            center={defaultCenter}
+                            lastReset={lastReset}
+                            selectionEnabled={true}
+                        />
+                        <div className="controls">
+                            <PushButton className="reset" onClick={handleReset}>
+                                <RiResetLeftFill color="#ffffff" />
+                            </PushButton>
+                            <PushButton className="submit">
+                                <LuClipboardCheck color="#ffffff" />
+                            </PushButton>
+                        </div>
+                    </Widget>
+                    <PushButton className="skip">
+                        <IoIosSkipForward color="#ffffff" />
+                    </PushButton>
+                </div>
+            </div>
         </div>
     );
 };
