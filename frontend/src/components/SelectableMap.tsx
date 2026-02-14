@@ -1,7 +1,7 @@
 import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import L from "leaflet";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 function MapViewController({
     zoom = 7,
@@ -13,7 +13,9 @@ function MapViewController({
 
     useEffect(() => {
         const onMapClick = (event: L.LeafletMouseEvent) => {
-            onSelection(event.latlng.lat, event.latlng.lng);
+            const lat = Math.max(-90, Math.min(90, event.latlng.lat));
+            const lng = Math.max(-180, Math.min(180, event.latlng.lng));
+            onSelection(lat, lng);
         };
         map.on("click", onMapClick);
         return () => {
@@ -34,7 +36,7 @@ export default function SelectableMap({
     center = [45.40616374516014, -75.69580078125001],
     lastReset = 0,
     selectionEnabled = false,
-    onSelection = () => {}
+    onSelection = () => {},
 }: SelectableMapAttributes) {
     const [markerPosition, setMarkerPosition] =
         useState<LatLngExpression | null>(null);
@@ -57,6 +59,12 @@ export default function SelectableMap({
             scrollWheelZoom={true}
             attributionControl={false}
             className="selectable-map"
+            worldCopyJump={false}
+            maxBounds={[
+                [-90, -180],
+                [90, 180],
+            ]}
+            maxBoundsViscosity={1}
         >
             <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
 
