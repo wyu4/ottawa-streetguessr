@@ -10,12 +10,23 @@
     overflow-y: none;
     position: absolute;
     background: none;
+    gap: $spacing-2;
     h2 {
         font-size: 3rem;
     }
 
     p {
         font-size: 1.5rem;
+    }
+
+    @media (max-width: 800px) {
+        h2 {
+            font-size: 2rem;
+        }
+
+        p {
+            font-size: 1rem;
+        }
     }
 
     button {
@@ -28,6 +39,7 @@
         flex-direction: row;
         justify-content: center;
         align-items: center;
+        flex-wrap: wrap;
         gap: 0.45rem;
         p {
             font-style: italic;

@@ -16,5 +16,5 @@ declare type GameAnswerPayload = {
 };
 
 declare type GameplayAttributes = DivAttributes & {
-    onGuess?: (guess: number[] | undefined, answer: GameAnswerPayload, timeElapsed: number) => void;
+    onGuess?: (guess: number[] | undefined, answer: GameAnswerPayload) => void;
 };
