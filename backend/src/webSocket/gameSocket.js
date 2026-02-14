@@ -74,7 +74,7 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
                     currentGame.lat = chosen.latitude;
                     currentGame.name = chosen.name;
                     currentGame.lon = chosen.longitude;
-                    currentGame.feed = `https://traffic.ottawa.ca/camera?id=${chosen.id}`;
+                    currentGame.feed = `https://traffic.ottawa.ca/camera?id=${chosen.camera_number}`;
                     // currentGame.feed = `https://traffic.ottawa.ca/camera?id=412`;
 
                     return ws.send(
