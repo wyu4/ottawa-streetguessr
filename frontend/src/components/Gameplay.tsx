@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 import type { LatLngExpression } from "leaflet";
 import { LuClipboardCheck } from "react-icons/lu";
 import gsap from "gsap";
+import "./../styles/Gameplay.scss";
+import { formatTime } from "../utils/TimeUtils";
 
 const Gameplay = ({
     className = "",
@@ -111,7 +113,6 @@ const Gameplay = ({
                             name: parsed.message,
                             latlng: parsed.answer,
                         },
-                        getCurrentTime() - startTime,
                     );
                 }
             } else {
@@ -136,7 +137,7 @@ const Gameplay = ({
             socket.close();
             websocketRef.current = null;
         };
-    }, [WebsocketUrl]);
+    }, [WebsocketUrl, onGuess]);
 
     useEffect(() => {
         if (websocketRef.current == null || !connected) return;
@@ -162,7 +163,7 @@ const Gameplay = ({
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [connected, started]);
+    }, [connected, sourceIsValid, started]);
 
     useEffect(() => {
         if (startTime < 0) return;
@@ -183,7 +184,7 @@ const Gameplay = ({
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [startTime]);
+    }, [gameLength, startTime, started]);
 
     useGSAP(
         () => {
@@ -254,16 +255,6 @@ const Gameplay = ({
 
     const handleLoad = () => {
         setLoaded(true);
-    };
-
-    const formatTime = (totalSeconds: number) => {
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-
-        const formattedMinutes = String(minutes).padStart(1, "0");
-        const formattedSeconds = String(seconds).padStart(2, "0");
-
-        return `${formattedMinutes}:${formattedSeconds}`;
     };
 
     return (

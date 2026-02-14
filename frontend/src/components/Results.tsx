@@ -1,7 +1,15 @@
 import type { LatLngExpression } from "leaflet";
 import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import "./../styles/Results.scss";
+import Widget from "./Widget";
+import { calculateHaversineDistance, midpoint } from "../utils/Coordinates";
+import PushButton from "./PushButton";
+import { FaHome } from "react-icons/fa";
+import { IoIosRefresh } from "react-icons/io";
+import { FaMapMarkedAlt } from "react-icons/fa";
+import gsap from "gsap";
 
 const guessIcon = new L.Icon({
     iconUrl: "/Marker.webp",
@@ -16,37 +24,9 @@ const answerIcon = new L.Icon({
 const ResultsMapController = ({
     guess,
     answer,
+    haversineDistance,
 }: ResultsMapControllerAttributes) => {
     const map = useMap();
-    const earthRadius = 6371;
-    const degreesToRadians = Math.PI / 180;
-
-    function midpoint(latlng1: number[], latlng2: number[]) {
-        const lat1 = latlng1[0];
-        const lon1 = latlng1[1];
-        const lat2 = latlng2[0];
-        const lon2 = latlng2[1];
-
-        return [(lat1 + lat2) / 2, (lon1 + lon2) / 2];
-    }
-
-    function haversineDistance(latlng1: number[], latlng2: number[]) {
-        const lat1 = latlng1[0] * degreesToRadians;
-        const lon1 = latlng1[1] * degreesToRadians;
-        const lat2 = latlng2[0] * degreesToRadians;
-        const lon2 = latlng2[1] * degreesToRadians;
-
-        const deltaLat = lat2 - lat1;
-        const deltaLon = lon2 - lon1;
-
-        const a =
-            Math.pow(Math.sin(deltaLat / 2), 2) +
-            Math.cos(lat1) *
-                Math.cos(lat2) *
-                Math.pow(Math.sin(deltaLon / 2), 2);
-
-        return 2 * earthRadius * Math.asin(Math.sqrt(a));
-    }
 
     useEffect(() => {
         const center = midpoint(guess, answer) as LatLngExpression;
@@ -60,12 +40,12 @@ const ResultsMapController = ({
             answer as LatLngExpression,
         ]);
         map.fitBounds(bounds, {
-            padding: [50, 50],
+            padding: [100, 100],
         });
         const distance = L.marker(center, {
             icon: L.divIcon({
                 className: "distance",
-                html: `<div><p>${haversineDistance(guess, answer).toFixed(2)} km</p></div>`,
+                html: `<div><p>${haversineDistance.toFixed(2)} km</p></div>`,
             }),
         }).addTo(map);
         const answerMarker = L.marker(answer as LatLngExpression, {
@@ -83,7 +63,7 @@ const ResultsMapController = ({
             map.removeLayer(guessMarker);
             map.removeLayer(line);
         };
-    }, [guess, answer]);
+    }, [guess, answer, map, haversineDistance]);
 
     return null;
 };
@@ -91,12 +71,50 @@ const ResultsMapController = ({
 const Results = ({
     guess,
     answer,
-    timeElapsed,
     className = "",
+    onHome = () => {},
+    onReset = () => {},
     ...props
 }: ResultsAttributes) => {
+    const haversineDistance = useMemo(() => {
+        if (guess === undefined) return 0;
+        return calculateHaversineDistance(guess, answer.latlng);
+    }, [guess, answer]);
+
+    const resultsRef = useRef<HTMLDivElement>(null);
+    const [debounce, setDebounce] = useState(false);
+
+    function handleHome() {
+        setDebounce(false);
+        gsap.to(".results", {
+            opacity: 0,
+            duration: 1,
+            ease: "power2.out",
+            overwrite: "auto",
+            onComplete: onHome,
+        });
+    }
+
+    function handleRestart() {
+        setDebounce(false);
+        gsap.to(".results", {
+            opacity: 0,
+            duration: 1,
+            ease: "power2.out",
+            overwrite: "auto",
+            onComplete: onReset,
+        });
+    }
+
+    function handleMaps() {
+        window.open(
+            `https://www.google.com/maps/search/?api=1&query=${answer.latlng[0]},${answer.latlng[1]}`,
+            "_blank",
+        );
+    }
+
     return (
-        <div className={`results ${className}`} {...props}>
+        <div className={`results ${className}`} {...props} ref={resultsRef}>
             <MapContainer
                 center={
                     (guess === undefined
@@ -125,11 +143,37 @@ const Results = ({
                         <ResultsMapController
                             guess={guess}
                             answer={answer.latlng}
+                            haversineDistance={haversineDistance}
                         />
                     </>
                 )}
             </MapContainer>
-            <div className="info"></div>
+            <Widget className="info">
+                <h2>{`"${answer.name}"`}</h2>
+                <div className="data">
+                    <p>
+                        <b>Coordinates:</b>
+                    </p>
+                    <p>{`${answer.latlng[0].toFixed(4)}, ${answer.latlng[1].toFixed(4)}`}</p>
+                </div>
+                <div className="data">
+                    <p>
+                        <b>Error:</b>
+                    </p>
+                    <p>{`${haversineDistance.toFixed(2)}km`}</p>
+                </div>
+                <div className="controls">
+                    <PushButton onClick={handleHome} disabled={debounce}>
+                        <FaHome />
+                    </PushButton>
+                    <PushButton onClick={handleRestart} disabled={debounce}>
+                        <IoIosRefresh />
+                    </PushButton>
+                    <PushButton onClick={handleMaps}>
+                        <FaMapMarkedAlt />
+                    </PushButton>
+                </div>
+            </Widget>
         </div>
     );
 };

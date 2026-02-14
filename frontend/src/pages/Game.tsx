@@ -6,23 +6,25 @@ import Results from "../components/Results";
 
 export default function Game({ onHome = () => {} }: GameTabAttributes) {
     const [gameState, setGameState] = useState(0);
+
     const [answer, setAnswer] = useState<ResultsAttributes | undefined>(
         undefined,
     );
 
     const handleGuideAccept = () => {
+        setAnswer(undefined);
         setGameState(1);
     };
 
     const handleGuess = (
         newGuess: number[] | undefined,
         newAnswer: GameAnswerPayload,
-        newTimeElapsed: number,
     ) => {
         setAnswer({
             guess: newGuess,
             answer: newAnswer,
-            timeElapsed: newTimeElapsed,
+            onReset: () => setGameState(0),
+            onHome: onHome,
         });
     };
 

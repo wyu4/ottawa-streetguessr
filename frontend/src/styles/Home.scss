@@ -1,6 +1,7 @@
 @use "./Theme.scss" as *;
 
 .home {
+    position: absolute;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -8,7 +9,6 @@
     padding: $spacing-1;
     overflow-x: none;
     overflow-y: none;
-    position: absolute;
     background: none;
     top: 0;
     left: 0;
@@ -80,10 +80,11 @@
     }
     h2 {
         position: relative;
-        margin-top: -1.5%;
-        margin-bottom: 5%;
+        margin-top: $spacing-3;
+        margin-bottom: $spacing-1;
         z-index: 2;
         font-weight: bold;
+        font-size: min(1.5rem, 3vw);
         filter: drop-shadow(0 0 5px black);
     }
     button {

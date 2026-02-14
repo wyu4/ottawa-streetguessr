@@ -1,0 +1,73 @@
+@use "./Theme.scss" as *;
+
+.results {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    .map {
+        z-index: 20;
+        width: 100%;
+        height: 100%;
+        .distance {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            p {
+                color: #000000;
+                text-wrap: nowrap;
+                font-weight: bold;
+            }
+        }
+    }
+    .info {
+        z-index: 21;
+        position: absolute;
+        top: $spacing-1;
+        right: $spacing-1;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-items: center;
+        padding: $spacing-3;
+        gap: $spacing-3;
+
+        .data {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-evenly;
+            gap: $spacing-3;
+            padding-left: $spacing-3;
+            padding-right: $spacing-3;
+        }
+
+        button {
+            padding: $spacing-3;
+        }
+
+        @media (max-width: 800px) {
+            position: relative;
+            top: auto;
+            right: auto;
+            width: 100%;
+            border-radius: 0;
+            border-width: 0;
+            padding: $spacing-2;
+
+            .controls {
+                width: auto;
+                gap: $spacing-3;
+            }
+        }
+    }
+}

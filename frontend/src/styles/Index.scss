@@ -13,6 +13,8 @@
     top: 0;
     bottom: 0;
     background-image: $background-1;
+    overflow-x: hidden;
+    overflow-y: hidden;
 }
 
 p,
@@ -22,6 +24,7 @@ h3,
 button,
 a {
     color: #fcf9ff;
+    margin-block: 0;
 }
 
 h1 {
