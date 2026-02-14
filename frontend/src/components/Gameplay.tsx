@@ -18,14 +18,15 @@ const Gameplay = ({
         45.40616374516014, -75.69580078125001,
     ];
     const defaultZoom = 8;
+    const gameLength = 2 * 60;
 
     const WebsocketUrl = import.meta.env.VITE_Websocket_Url;
     const LocalWebsocketUrl = "http://localhost:3000";
     const websocketRef = useRef<WebSocket>(null);
     const gameplayRef = useRef<HTMLDivElement>(null);
+    const selectionRef = useRef<number[] | undefined>(undefined);
 
     const sourceType = useRef<string>("image/webp");
-    const [gameEnabled, setGameEnabled] = useState(true);
     const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
     const [startTime, setStartTime] = useState(-1);
@@ -34,7 +35,6 @@ const Gameplay = ({
     const [time, setTime] = useState(0);
     const [lastReset, setLastReset] = useState(0);
     const [sourceIsValid, setSourceIsValid] = useState(true);
-    const [selection, setSelection] = useState<number[] | undefined>(undefined);
 
     const handleReset = () => {
         setLastReset(Date.now());
@@ -50,24 +50,24 @@ const Gameplay = ({
     };
 
     const handleSelect = (lat: number, lng: number) => {
-        setSelection([lat, lng]);
+        selectionRef.current = [lat, lng];
+    };
+
+    const sendGuess = () => {
+        if (websocketRef.current == null) return;
+        websocketRef.current.send(JSON.stringify({ type: "guess" }));
     };
 
     const handleSubmit = () => {
-        if (selection === undefined) {
+        if (selectionRef.current === undefined) {
             return;
         }
-        setGameEnabled(false);
-        onGuess(selection);
+        sendGuess();
     };
 
     const getCurrentTime = () => Math.floor(Date.now() / 1000);
 
     useEffect(() => {
-        if (!gameEnabled) {
-            setConnected(false);
-            return;
-        }
         const socket = new WebSocket(
             WebsocketUrl == null ? LocalWebsocketUrl : WebsocketUrl,
         );
@@ -103,6 +103,16 @@ const Gameplay = ({
                 } else if (parsed.type === "game") {
                     setStarted(true);
                     setStartTime(getCurrentTime);
+                } else if (parsed.type === "guess") {
+                    if (parsed.answer === undefined) return;
+                    onGuess(
+                        selectionRef.current,
+                        {
+                            name: parsed.message,
+                            latlng: parsed.answer,
+                        },
+                        getCurrentTime() - startTime,
+                    );
                 }
             } else {
                 const blob = new Blob([message.data], {
@@ -126,7 +136,7 @@ const Gameplay = ({
             socket.close();
             websocketRef.current = null;
         };
-    }, [WebsocketUrl, gameEnabled]);
+    }, [WebsocketUrl]);
 
     useEffect(() => {
         if (websocketRef.current == null || !connected) return;
@@ -159,17 +169,16 @@ const Gameplay = ({
 
         const refresh = () => {
             if (!started) return;
-            const newTime = 2 * 60 - (getCurrentTime() - startTime);
+            const newTime = gameLength - (getCurrentTime() - startTime);
             if (newTime < 0) {
-                setGameEnabled(false);
-                onGuess(selection);
+                sendGuess();
                 return;
-            };
+            }
             setTime(newTime);
         };
         refresh();
 
-        const refreshInterval = setInterval(refresh, 100);
+        const refreshInterval = setInterval(refresh, 1000);
 
         return () => {
             clearInterval(refreshInterval);
@@ -251,7 +260,6 @@ const Gameplay = ({
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
 
-        // Use String.padStart() to ensure two digits for seconds
         const formattedMinutes = String(minutes).padStart(1, "0");
         const formattedSeconds = String(seconds).padStart(2, "0");
 
