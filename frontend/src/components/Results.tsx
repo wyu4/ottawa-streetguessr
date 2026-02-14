@@ -132,7 +132,7 @@ const Results = ({
                 ]}
                 maxBoundsViscosity={1}
             >
-                <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"/>
                 {guess === undefined ? (
                     <Marker
                         position={answer.latlng as LatLngExpression}

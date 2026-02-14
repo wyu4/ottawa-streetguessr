@@ -37,6 +37,7 @@ const Gameplay = ({
     const [time, setTime] = useState(0);
     const [lastReset, setLastReset] = useState(0);
     const [sourceIsValid, setSourceIsValid] = useState(true);
+    const [isHoveringMap, setIsHoveringMap] = useState(false);
 
     const handleReset = () => {
         setLastReset(Date.now());
@@ -49,6 +50,14 @@ const Gameplay = ({
     const handleSkip = () => {
         setSourceIsValid(true);
         setStarted(false);
+    };
+
+    const handleMouseEnter = () => {
+        setIsHoveringMap(true);
+    };
+
+    const handleMouseLeave = () => {
+        setIsHoveringMap(false);
     };
 
     const handleSelect = (lat: number, lng: number) => {
@@ -107,13 +116,10 @@ const Gameplay = ({
                     setStartTime(getCurrentTime);
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
-                    onGuess(
-                        selectionRef.current,
-                        {
-                            name: parsed.message,
-                            latlng: parsed.answer,
-                        },
-                    );
+                    onGuess(selectionRef.current, {
+                        name: parsed.message,
+                        latlng: parsed.answer,
+                    });
                 }
             } else {
                 const blob = new Blob([message.data], {
@@ -207,6 +213,9 @@ const Gameplay = ({
                 translateY: "-100%",
                 opacity: 0,
             });
+            gsap.set(".map", {
+                opacity: 0.5,
+            });
             return;
         },
         { dependencies: [], scope: gameplayRef },
@@ -253,6 +262,27 @@ const Gameplay = ({
         { dependencies: [sourceIsValid], scope: gameplayRef },
     );
 
+    useGSAP(
+        () => {
+            if (isHoveringMap) {
+                gsap.to(".map", {
+                    opacity: 1,
+                    duration: 0.25,
+                    ease: "power2.out",
+                    overwrite: "auto",
+                });
+                return;
+            }
+            gsap.to(".map", {
+                opacity: 0.5,
+                duration: 0.25,
+                ease: "power2.out",
+                overwrite: "auto",
+            });
+        },
+        { dependencies: [isHoveringMap], scope: gameplayRef },
+    );
+
     const handleLoad = () => {
         setLoaded(true);
     };
@@ -289,7 +319,11 @@ const Gameplay = ({
                     </div>
                 </div>
                 <div className="side">
-                    <Widget className="map">
+                    <Widget
+                        className="map"
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                    >
                         <SelectableMap
                             zoom={defaultZoom}
                             center={defaultCenter}
