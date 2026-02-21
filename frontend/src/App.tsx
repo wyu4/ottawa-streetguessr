@@ -12,9 +12,7 @@ const Tabs = {
 };
 
 function App() {
-    const [cookies, setCookie, removeCookie] = useCookies([
-        "ottawa_streetguessr_intro_skip",
-    ]);
+    const [cookies, setCookie] = useCookies(["ottawa_streetguessr_intro_skip"]);
 
     const navigate = useNavigate();
 
@@ -23,10 +21,14 @@ function App() {
     };
 
     const onHome = () => {
-        setCookie("ottawa_streetguessr_intro_skip", true, {
-            maxAge: 60 * 60 * 24
-        });
         navigate(Tabs.Home);
+    };
+
+    const onAboutAgree = () => {
+        setCookie("ottawa_streetguessr_intro_skip", true, {
+            maxAge: 60 * 60 * 24 * 7,
+        });
+        onHome();
     };
 
     return (
@@ -40,7 +42,7 @@ function App() {
                                 false ||
                             cookies["ottawa_streetguessr_intro_skip"] ===
                                 undefined ? (
-                                <About onAgree={onHome} />
+                                <About onAgree={onAboutAgree} />
                             ) : (
                                 <Navigate to={Tabs.Home} replace />
                             )
@@ -48,7 +50,16 @@ function App() {
                     />
                     <Route
                         path={Tabs.Home}
-                        element={<Home onPlay={onPlay} />}
+                        element={
+                            cookies["ottawa_streetguessr_intro_skip"] ===
+                                false ||
+                            cookies["ottawa_streetguessr_intro_skip"] ===
+                                undefined ? (
+                                <Navigate to={Tabs.None} replace />
+                            ) : (
+                                <Home onPlay={onPlay} />
+                            )
+                        }
                     />
                     <Route
                         path={Tabs.Game}

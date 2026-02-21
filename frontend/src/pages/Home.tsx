@@ -9,7 +9,6 @@ import { SplitText } from "gsap/all";
 import PushButton from "../components/PushButton";
 import { FaGithub } from "react-icons/fa";
 import { FaQuestion } from "react-icons/fa6";
-import AboutWidget from "../components/AboutWidget";
 import About from "./About";
 
 export default function Home({ onPlay = () => {} }: HomeTabAttributes) {
