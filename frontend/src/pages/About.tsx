@@ -1,4 +1,3 @@
-import "../styles/Home.scss";
 import { forwardRef, useRef, useState } from "react";
 import "./../styles/About.scss";
 import { useGSAP } from "@gsap/react";
