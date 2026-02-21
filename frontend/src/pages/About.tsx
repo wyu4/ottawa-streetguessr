@@ -100,8 +100,9 @@ const AboutWidget = ({
                 gsap.to("h2", {
                     translateY: 0,
                     opacity: 1,
-                    duration: bodytween.duration(),
+                    duration: bodytween.duration() / 3,
                     ease: "power2.out",
+                    overwrite: "auto"
                 });
                 return;
             }
@@ -115,12 +116,14 @@ const AboutWidget = ({
                     from: "end",
                 },
                 ease: "power2.out",
+                overwrite: "auto"
             });
             gsap.to("h2", {
                 translateY: "-1rem",
                 opacity: 0,
                 duration: bodytween.duration() / 3,
                 ease: "power2.out",
+                overwrite: "auto"
             });
 
             const agreeId = setTimeout(onAgree, bodytween.duration() * 1000);
