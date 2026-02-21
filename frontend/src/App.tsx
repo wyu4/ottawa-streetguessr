@@ -2,6 +2,8 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import Home from "./pages/Home";
 import "./styles/Index.scss";
 import Game from "./pages/Game";
+import About from "./pages/About";
+import { useCookies } from "react-cookie";
 
 const Tabs = {
     None: "/",
@@ -10,6 +12,10 @@ const Tabs = {
 };
 
 function App() {
+    const [cookies, setCookie, removeCookie] = useCookies([
+        "ottawa_streetguessr_intro_skip",
+    ]);
+
     const navigate = useNavigate();
 
     const onPlay = () => {
@@ -17,6 +23,9 @@ function App() {
     };
 
     const onHome = () => {
+        setCookie("ottawa_streetguessr_intro_skip", true, {
+            maxAge: 60 * 60 * 24
+        });
         navigate(Tabs.Home);
     };
 
@@ -26,7 +35,16 @@ function App() {
                 <Routes>
                     <Route
                         path={Tabs.None}
-                        element={<Navigate to={Tabs.Home} replace />}
+                        element={
+                            cookies["ottawa_streetguessr_intro_skip"] ===
+                                false ||
+                            cookies["ottawa_streetguessr_intro_skip"] ===
+                                undefined ? (
+                                <About onAgree={onHome} />
+                            ) : (
+                                <Navigate to={Tabs.Home} replace />
+                            )
+                        }
                     />
                     <Route
                         path={Tabs.Home}
