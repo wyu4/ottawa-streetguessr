@@ -120,7 +120,7 @@ const Gameplay = ({
 
     const getCurrentTime = () => Math.floor(Date.now() / 1000);
 
-    useEffect(() => {
+    useGSAP(() => {
         const socket = new WebSocket(
             WebsocketUrl == null ? LocalWebsocketUrl : WebsocketUrl,
         );
@@ -162,9 +162,17 @@ const Gameplay = ({
                     setStarted(true);
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
-                    onGuess(selectionRef.current, {
-                        name: parsed.message,
-                        latlng: parsed.answer,
+                    gsap.to(".loading", {
+                        opacity: 0,
+                        duration: 1,
+                        ease: "sine.inOut",
+                        overwrite: "auto",
+                        onComplete: () => {
+                            onGuess(selectionRef.current, {
+                                name: parsed.message!,
+                                latlng: parsed.answer!,
+                            });
+                        },
                     });
                 }
             } else {
