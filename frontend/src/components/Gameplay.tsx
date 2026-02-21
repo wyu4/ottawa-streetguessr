@@ -64,6 +64,7 @@ const Gameplay = ({
 
     const sourceType = useRef<string>("image/webp");
     const [connectionAttempt, setConnectionAttempt] = useState(0);
+    const [firstTimeConnecting, setFirstTimeConnecting] = useState(true);
     const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
     const [source, setSource] = useState<string | undefined>(undefined);
@@ -137,6 +138,7 @@ const Gameplay = ({
             setLoaded(false);
             setStartTime(-1);
             setIsGuessing(false);
+            setFirstTimeConnecting(false);
 
             setConnected(true);
             sendMessage({
@@ -204,6 +206,8 @@ const Gameplay = ({
     useEffect(() => {
         if (connected) return;
         const connectionAttemptID = setInterval(() => {
+            if (connected) return;
+            setFirstTimeConnecting(false);
             setConnectionAttempt((prev) => prev + 1);
         }, 5000);
 
@@ -300,7 +304,7 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (connected || connectionAttempt <= 0) {
+            if (connected || firstTimeConnecting) {
                 gsap.to(".errors", {
                     opacity: 0,
                     duration: 1,
@@ -332,7 +336,7 @@ const Gameplay = ({
                 delay: 0.5,
             });
         },
-        { dependencies: [connected, connectionAttempt], scope: gameplayRef },
+        { dependencies: [connected, firstTimeConnecting], scope: gameplayRef },
     );
 
     useGSAP(
@@ -438,7 +442,7 @@ const Gameplay = ({
             </div>
             <div className="interface">
                 <div
-                    hidden={connected || connectionAttempt <= 0}
+                    hidden={connected || firstTimeConnecting}
                     className="errors"
                 >
                     <Widget className="error-widget disconnected">
