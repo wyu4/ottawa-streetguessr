@@ -2,6 +2,7 @@ import type { LatLngExpression } from "leaflet";
 import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Theme from "./../styles/Theme.module.scss";
 import "./../styles/Results.scss";
 import Widget from "./Widget";
 import { calculateHaversineDistance, midpoint } from "../utils/Coordinates";
@@ -10,6 +11,7 @@ import { FaHome } from "react-icons/fa";
 import { IoIosRefresh } from "react-icons/io";
 import { FaMapMarkedAlt } from "react-icons/fa";
 import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 const guessIcon = new L.Icon({
     iconUrl: "/Marker.webp",
@@ -81,37 +83,123 @@ const Results = ({
         return calculateHaversineDistance(guess, answer.latlng);
     }, [guess, answer]);
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
+    const [isOpening, setIsOpening] = useState(true);
+
     const resultsRef = useRef<HTMLDivElement>(null);
-    const [debounce, setDebounce] = useState(false);
+    const [leaving, setLeaving] = useState<ResultsLeaveMode>("None");
 
     function handleHome() {
-        setDebounce(false);
-        gsap.to(".results", {
-            opacity: 0,
-            duration: 1,
-            ease: "power2.out",
-            overwrite: "auto",
-            onComplete: onHome,
-        });
+        setLeaving("Home");
     }
 
     function handleRestart() {
-        setDebounce(false);
-        gsap.to(".results", {
-            opacity: 0,
-            duration: 1,
-            ease: "power2.out",
-            overwrite: "auto",
-            onComplete: onReset,
-        });
+        setLeaving("Restart");
     }
 
-    function handleMaps() {
+    function handleOpenMaps() {
         window.open(
             `https://www.google.com/maps/search/?api=1&query=${answer.latlng[0]},${answer.latlng[1]}`,
             "_blank",
         );
     }
+
+    useGSAP(() => {
+        gsap.set(".map, .info", {
+            opacity: 0,
+        });
+        gsap.to(".map, .info", {
+            opacity: 1,
+            duration: 1,
+            ease: "power2.out",
+            overwrite: "auto",
+        });
+
+        if (!isMobile) {
+            gsap.set(".info", {
+                top: `calc(1.5 * ${Theme.spacing_1})`,
+            });
+        }
+
+        gsap.set(".info .child", {
+            opacity: 0,
+        });
+        const infoChildrenTween = gsap.to(".info .child", {
+            opacity: 1,
+            duration: 1,
+            delay: 0.5,
+            stagger: 0.25,
+            ease: "power2.out",
+        });
+        gsap.to(".info", {
+            top: Theme.spacing_1,
+            duration: infoChildrenTween.duration(),
+            ease: "sine.out",
+            onComplete: () => {
+                setIsOpening(false);
+            }
+        });
+
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 800);
+        };
+        window.addEventListener("resize", handleResize);
+        handleResize();
+
+        return () => {
+            window.removeEventListener("resize", handleResize);
+        };
+    }, []);
+
+    useGSAP(
+        () => {
+            if (isMobile) {
+                gsap.to(".info", {
+                    top: "auto",
+                    duration: 0,
+                    overwrite: "auto",
+                });
+                return;
+            }
+
+            if (!isOpening) {
+                gsap.to(".info", {
+                    top: Theme.spacing_1,
+                    duration: 0,
+                });
+            }
+        },
+        { dependencies: [isMobile, isOpening], scope: resultsRef },
+    );
+
+    useGSAP(
+        () => {
+            if (leaving === "None") return;
+            const tl = gsap.timeline();
+            tl.to(".info .child", {
+                opacity: 0,
+                duration: 0.25,
+                ease: "power2.out",
+            }).to(".info, .map", {
+                opacity: 0,
+                stagger: 0.25,
+                duration: 0.5,
+                ease: "power2.out",
+            });
+            const leaveId = setTimeout(() => {
+                if (leaving === "Home") {
+                    onHome();
+                } else if (leaving === "Restart") {
+                    onReset();
+                }
+            }, tl.duration() * 1000);
+
+            return () => {
+                clearTimeout(leaveId);
+            };
+        },
+        { dependencies: [leaving], scope: resultsRef },
+    );
 
     return (
         <div className={`results ${className}`} {...props} ref={resultsRef}>
@@ -132,7 +220,7 @@ const Results = ({
                 ]}
                 maxBoundsViscosity={1}
             >
-                <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"/>
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
                 {guess === undefined ? (
                     <Marker
                         position={answer.latlng as LatLngExpression}
@@ -148,33 +236,64 @@ const Results = ({
                     </>
                 )}
             </MapContainer>
-            <Widget className="info">
-                <h2>{`"${answer.name}"`}</h2>
-                <div className="data">
-                    <p>
-                        <b>Coordinates:</b>
-                    </p>
-                    <p>{`${answer.latlng[0].toFixed(4)}, ${answer.latlng[1].toFixed(4)}`}</p>
-                </div>
-                <div className="data">
-                    <p>
-                        <b>Error:</b>
-                    </p>
-                    <p>{`${haversineDistance.toFixed(2)}km`}</p>
-                </div>
-                <div className="controls">
-                    <PushButton onClick={handleHome} disabled={debounce}>
-                        <FaHome />
-                    </PushButton>
-                    <PushButton onClick={handleRestart} disabled={debounce}>
-                        <IoIosRefresh />
-                    </PushButton>
-                    <PushButton onClick={handleMaps}>
-                        <FaMapMarkedAlt />
-                    </PushButton>
-                </div>
-            </Widget>
+            <InfoWidget
+                answer={answer}
+                onHome={handleHome}
+                onReset={handleRestart}
+                onOpenMaps={handleOpenMaps}
+                error={haversineDistance}
+                disabled={leaving !== "None"}
+                className={isMobile ? "mobile" : ""}
+            />
         </div>
+    );
+};
+
+const InfoWidget = ({
+    answer,
+    onHome,
+    onReset,
+    onOpenMaps,
+    error,
+    disabled,
+    className,
+    ...props
+}: InfoWidgetAttributes) => {
+    return (
+        <Widget className={`info ${className}`} {...props}>
+            <h2 className="child">{`"${answer.name}"`}</h2>
+            <div className="data">
+                <p className="child">
+                    <b>Coordinates:</b>
+                </p>
+                <p className="child">{`${answer.latlng[0].toFixed(4)}, ${answer.latlng[1].toFixed(4)}`}</p>
+            </div>
+            <div className="data">
+                <p className="child">
+                    <b>Error:</b>
+                </p>
+                <p className="child">{`${error.toFixed(2)}km`}</p>
+            </div>
+            <div className="controls">
+                <PushButton
+                    className="child"
+                    onClick={onHome}
+                    disabled={disabled}
+                >
+                    <FaHome />
+                </PushButton>
+                <PushButton
+                    className="child"
+                    onClick={onReset}
+                    disabled={disabled}
+                >
+                    <IoIosRefresh />
+                </PushButton>
+                <PushButton className="child" onClick={onOpenMaps}>
+                    <FaMapMarkedAlt />
+                </PushButton>
+            </div>
+        </Widget>
     );
 };
 

@@ -54,20 +54,20 @@
         button {
             padding: $spacing-3;
         }
+    }
 
-        @media (max-width: 800px) {
-            position: relative;
-            top: auto;
-            right: auto;
-            width: 100%;
-            border-radius: 0;
-            border-width: 0;
-            padding: $spacing-2;
+    .info.mobile {
+        position: relative;
+        top: auto;
+        right: auto;
+        width: 100%;
+        border-radius: 0;
+        border-width: 0;
+        padding: $spacing-2;
 
-            .controls {
-                width: auto;
-                gap: $spacing-3;
-            }
+        .controls {
+            width: auto;
+            gap: $spacing-3;
         }
     }
 }

@@ -12,8 +12,17 @@ const server = http.createServer(app);
 app.use(express.static(path.join(__dirname, "src")));
 app.use(express.json());
 
+function getCurrentTime() {
+    return Math.floor(Date.now() / 1000);
+}
+
 let cameras = [];
 let enabled = false;
+
+function isEnabled() {
+    return enabled && process.env.SERVER_ENABLED === "1";
+}
+
 fetch("https://traffic.ottawa.ca/map/service/camera", {
     method: "GET",
     headers: {
@@ -27,24 +36,15 @@ fetch("https://traffic.ottawa.ca/map/service/camera", {
         cameras = parsed.cameras;
         enabled = true;
         console.log("<<< Received & stored camera data.");
+        createGameSocket(server, () => cameras, isEnabled, getCurrentTime);
     })
     .catch((err) => {
         enabled = false;
         console.error(err);
     });
 
-function isEnabled() {
-    return enabled && process.env.SERVER_ENABLED === "1";
-}
-
-function getCurrentTime() {
-    return Math.floor(Date.now() / 1000);
-}
-
 createRootAPI(app, path);
 createEnabledAPI(app, isEnabled);
-
-createGameSocket(server, () => cameras, isEnabled, getCurrentTime);
 
 server.listen(3000, () => {
     console.log("Express running on http://localhost:3000");

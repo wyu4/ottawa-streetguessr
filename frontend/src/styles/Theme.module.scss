@@ -1,0 +1,7 @@
+@use "./Theme.scss" as *;
+
+:export {
+    spacing_1: $spacing-1;
+    spacing_2: $spacing-2;
+    spacing_3: $spacing-3;
+}

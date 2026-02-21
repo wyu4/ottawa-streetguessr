@@ -64,7 +64,7 @@ const Gameplay = ({
 
     const sourceType = useRef<string>("image/webp");
     const [connectionAttempt, setConnectionAttempt] = useState(0);
-    const [firstTimeConnecting, setFirstTimeConnecting] = useState(true);
+    const [connectionFailed, setConnectionFailed] = useState(false);
     const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
     const [source, setSource] = useState<string | undefined>(undefined);
@@ -122,6 +122,8 @@ const Gameplay = ({
     const getCurrentTime = () => Math.floor(Date.now() / 1000);
 
     useGSAP(() => {
+        let closeId: number | undefined = undefined;
+
         const socket = new WebSocket(
             WebsocketUrl == null ? LocalWebsocketUrl : WebsocketUrl,
         );
@@ -138,7 +140,6 @@ const Gameplay = ({
             setLoaded(false);
             setStartTime(-1);
             setIsGuessing(false);
-            setFirstTimeConnecting(false);
 
             setConnected(true);
             sendMessage({
@@ -150,7 +151,7 @@ const Gameplay = ({
             if (typeof message.data === "string") {
                 const parsed: GameResponsePayload = JSON.parse(message.data);
                 if (parsed.success !== true) {
-                    console.error(message.data);
+                    console.error(parsed.message);
                     return;
                 }
                 if (parsed.type === "feed") {
@@ -161,6 +162,7 @@ const Gameplay = ({
                     setSourceIsValid(true);
                     sourceType.current = parsed.content!;
                 } else if (parsed.type === "game") {
+                    setConnectionFailed(false);
                     setStarted(true);
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
@@ -190,6 +192,9 @@ const Gameplay = ({
             setConnected(false);
             setStarted(false);
             setMarkerPosition(null);
+            closeId = setTimeout(() => {
+                setConnectionFailed(true);
+            }, 1000);
             console.log("Lost connection...");
         };
 
@@ -198,23 +203,23 @@ const Gameplay = ({
         };
 
         return () => {
+            clearTimeout(closeId);
             socket.close();
             websocketRef.current = null;
         };
     }, [WebsocketUrl, connectionAttempt]);
 
     useEffect(() => {
-        if (connected) return;
+        if (!connectionFailed) return;
         const connectionAttemptID = setInterval(() => {
-            if (connected) return;
-            setFirstTimeConnecting(false);
+            if (!connectionFailed) return;
             setConnectionAttempt((prev) => prev + 1);
         }, 5000);
 
         return () => {
             clearInterval(connectionAttemptID);
         };
-    }, [connected]);
+    }, [connectionFailed]);
 
     // Send data feed requests when started
     useEffect(() => {
@@ -304,39 +309,39 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (connected || firstTimeConnecting) {
+            if (connectionFailed) {
                 gsap.to(".errors", {
-                    opacity: 0,
+                    opacity: 1,
                     duration: 1,
-                    pointerEvents: "none",
+                    pointerEvents: "all",
+                    ease: "power2.out",
+                    overwrite: "auto",
+                });
+                gsap.to(".disconnected", {
+                    translateY: 0,
+                    opacity: 1,
                     ease: "power2.out",
                     overwrite: "auto",
                     delay: 0.5,
                 });
-                gsap.to(".disconnected", {
-                    translateY: "100%",
-                    opacity: 0,
-                    ease: "power2.out",
-                    overwrite: "auto",
-                });
                 return;
             }
             gsap.to(".errors", {
-                opacity: 1,
+                opacity: 0,
                 duration: 1,
-                pointerEvents: "all",
-                ease: "power2.out",
-                overwrite: "auto",
-            });
-            gsap.to(".disconnected", {
-                translateY: 0,
-                opacity: 1,
+                pointerEvents: "none",
                 ease: "power2.out",
                 overwrite: "auto",
                 delay: 0.5,
             });
+            gsap.to(".disconnected", {
+                translateY: "100%",
+                opacity: 0,
+                ease: "power2.out",
+                overwrite: "auto",
+            });
         },
-        { dependencies: [connected, firstTimeConnecting], scope: gameplayRef },
+        { dependencies: [connectionFailed], scope: gameplayRef },
     );
 
     useGSAP(
@@ -441,11 +446,11 @@ const Gameplay = ({
                 <img src={source} draggable={false} onLoad={handleLoad} />
             </div>
             <div className="interface">
-                <div
-                    hidden={connected || firstTimeConnecting}
-                    className="errors"
-                >
-                    <Widget className="error-widget disconnected">
+                <div className="errors">
+                    <Widget
+                        hidden={!connectionFailed}
+                        className="error-widget disconnected"
+                    >
                         <h2>Connection lost</h2>
                         <VscDebugDisconnect color="white" size={"3em"} />
                         <p>
