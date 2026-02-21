@@ -1,6 +1,5 @@
 import { RiResetLeftFill } from "react-icons/ri";
 import PushButton from "./PushButton";
-import SelectableMap from "./SelectableMap";
 import Widget from "./Widget";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
@@ -9,8 +8,43 @@ import { useEffect, useRef, useState } from "react";
 import type { LatLngExpression } from "leaflet";
 import { LuClipboardCheck } from "react-icons/lu";
 import gsap from "gsap";
-import "./../styles/Gameplay.scss";
+import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
 import { formatTime } from "../utils/TimeUtils";
+import { VscDebugDisconnect } from "react-icons/vsc";
+import "./../styles/Gameplay.scss";
+
+const markerIcon = new L.Icon({
+    iconUrl: "/Marker.webp",
+    iconSize: [41, 41],
+});
+
+function GameplayMapController({
+    zoom = 7,
+    center = [45.2501659, -76.1298876],
+    lastReset = 0,
+    onSelection = () => {},
+}: GameplayMapAttributes) {
+    const map = useMap();
+
+    useEffect(() => {
+        const onMapClick = (event: L.LeafletMouseEvent) => {
+            const lat = Math.max(-90, Math.min(90, event.latlng.lat));
+            const lng = Math.max(-180, Math.min(180, event.latlng.lng));
+            onSelection(lat, lng);
+        };
+        map.on("click", onMapClick);
+        return () => {
+            map.off("click", onMapClick);
+        };
+    }, [map, onSelection]);
+
+    useEffect(() => {
+        map.setView(center as LatLngExpression, zoom);
+    }, [lastReset, map]);
+
+    return null;
+}
 
 const Gameplay = ({
     className = "",
@@ -29,15 +63,20 @@ const Gameplay = ({
     const selectionRef = useRef<number[] | undefined>(undefined);
 
     const sourceType = useRef<string>("image/webp");
+    const [connectionAttempt, setConnectionAttempt] = useState(0);
+    const [connectionFailed, setConnectionFailed] = useState(false);
     const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
-    const [startTime, setStartTime] = useState(-1);
     const [source, setSource] = useState<string | undefined>(undefined);
     const [loaded, setLoaded] = useState(false);
     const [time, setTime] = useState(0);
+    const [startTime, setStartTime] = useState(-1);
     const [lastReset, setLastReset] = useState(0);
     const [sourceIsValid, setSourceIsValid] = useState(true);
     const [isHoveringMap, setIsHoveringMap] = useState(false);
+    const [isGuessing, setIsGuessing] = useState(false);
+    const [markerPosition, setMarkerPosition] =
+        useState<LatLngExpression | null>(null);
 
     const handleReset = () => {
         setLastReset(Date.now());
@@ -62,11 +101,15 @@ const Gameplay = ({
 
     const handleSelect = (lat: number, lng: number) => {
         selectionRef.current = [lat, lng];
+        setMarkerPosition([lat, lng]);
     };
 
     const sendGuess = () => {
         if (websocketRef.current == null) return;
-        websocketRef.current.send(JSON.stringify({ type: "guess" }));
+        setIsGuessing(true);
+        setTimeout(() => {
+            websocketRef.current!.send(JSON.stringify({ type: "guess" }));
+        }, 1000);
     };
 
     const handleSubmit = () => {
@@ -78,7 +121,9 @@ const Gameplay = ({
 
     const getCurrentTime = () => Math.floor(Date.now() / 1000);
 
-    useEffect(() => {
+    useGSAP(() => {
+        let closeId: number | undefined = undefined;
+
         const socket = new WebSocket(
             WebsocketUrl == null ? LocalWebsocketUrl : WebsocketUrl,
         );
@@ -91,6 +136,11 @@ const Gameplay = ({
         };
 
         socket.onopen = () => {
+            setSource(undefined);
+            setLoaded(false);
+            setStartTime(-1);
+            setIsGuessing(false);
+
             setConnected(true);
             sendMessage({
                 type: "start",
@@ -101,7 +151,7 @@ const Gameplay = ({
             if (typeof message.data === "string") {
                 const parsed: GameResponsePayload = JSON.parse(message.data);
                 if (parsed.success !== true) {
-                    console.error(message.data);
+                    console.error(parsed.message);
                     return;
                 }
                 if (parsed.type === "feed") {
@@ -112,13 +162,21 @@ const Gameplay = ({
                     setSourceIsValid(true);
                     sourceType.current = parsed.content!;
                 } else if (parsed.type === "game") {
+                    setConnectionFailed(false);
                     setStarted(true);
-                    setStartTime(getCurrentTime);
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
-                    onGuess(selectionRef.current, {
-                        name: parsed.message,
-                        latlng: parsed.answer,
+                    gsap.to(".loading", {
+                        opacity: 0,
+                        duration: 1,
+                        ease: "sine.inOut",
+                        overwrite: "auto",
+                        onComplete: () => {
+                            onGuess(selectionRef.current, {
+                                name: parsed.message!,
+                                latlng: parsed.answer!,
+                            });
+                        },
                     });
                 }
             } else {
@@ -132,6 +190,11 @@ const Gameplay = ({
 
         socket.onclose = () => {
             setConnected(false);
+            setStarted(false);
+            setMarkerPosition(null);
+            closeId = setTimeout(() => {
+                setConnectionFailed(true);
+            }, 1000);
             console.log("Lost connection...");
         };
 
@@ -140,11 +203,25 @@ const Gameplay = ({
         };
 
         return () => {
+            clearTimeout(closeId);
             socket.close();
             websocketRef.current = null;
         };
-    }, [WebsocketUrl, onGuess]);
+    }, [WebsocketUrl, connectionAttempt]);
 
+    useEffect(() => {
+        if (!connectionFailed) return;
+        const connectionAttemptID = setInterval(() => {
+            if (!connectionFailed) return;
+            setConnectionAttempt((prev) => prev + 1);
+        }, 5000);
+
+        return () => {
+            clearInterval(connectionAttemptID);
+        };
+    }, [connectionFailed]);
+
+    // Send data feed requests when started
     useEffect(() => {
         if (websocketRef.current == null || !connected) return;
 
@@ -171,11 +248,11 @@ const Gameplay = ({
         };
     }, [connected, sourceIsValid, started]);
 
+    // Timer
     useEffect(() => {
-        if (startTime < 0) return;
+        if (startTime < 0 || !connected || isGuessing) return;
 
         const refresh = () => {
-            if (!started) return;
             const newTime = gameLength - (getCurrentTime() - startTime);
             if (newTime < 0) {
                 sendGuess();
@@ -190,8 +267,9 @@ const Gameplay = ({
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [gameLength, startTime, started]);
+    }, [gameLength, startTime, connected, isGuessing]);
 
+    // Set all intitial GSAP states
     useGSAP(
         () => {
             gsap.set(".interface", {
@@ -213,12 +291,57 @@ const Gameplay = ({
                 translateY: "-100%",
                 opacity: 0,
             });
-            gsap.set(".map", {
+            gsap.set(".map-widget", {
                 opacity: 0.5,
             });
+            gsap.set(".errors", {
+                opacity: 0,
+            });
+            gsap.set(".error-widget", {
+                translateY: "100%",
+                opacity: 0,
+            });
+
             return;
         },
         { dependencies: [], scope: gameplayRef },
+    );
+
+    useGSAP(
+        () => {
+            if (connectionFailed) {
+                gsap.to(".errors", {
+                    opacity: 1,
+                    duration: 1,
+                    pointerEvents: "all",
+                    ease: "power2.out",
+                    overwrite: "auto",
+                });
+                gsap.to(".disconnected", {
+                    translateY: 0,
+                    opacity: 1,
+                    ease: "power2.out",
+                    overwrite: "auto",
+                    delay: 0.5,
+                });
+                return;
+            }
+            gsap.to(".errors", {
+                opacity: 0,
+                duration: 1,
+                pointerEvents: "none",
+                ease: "power2.out",
+                overwrite: "auto",
+                delay: 0.5,
+            });
+            gsap.to(".disconnected", {
+                translateY: "100%",
+                opacity: 0,
+                ease: "power2.out",
+                overwrite: "auto",
+            });
+        },
+        { dependencies: [connectionFailed], scope: gameplayRef },
     );
 
     useGSAP(
@@ -229,6 +352,7 @@ const Gameplay = ({
                 });
                 return;
             }
+            setStartTime(getCurrentTime);
             gsap.to(".feed", {
                 opacity: 1,
                 duration: 1,
@@ -264,8 +388,9 @@ const Gameplay = ({
 
     useGSAP(
         () => {
+            if (isGuessing) return;
             if (isHoveringMap) {
-                gsap.to(".map", {
+                gsap.to(".map-widget", {
                     opacity: 1,
                     duration: 0.25,
                     ease: "power2.out",
@@ -273,14 +398,39 @@ const Gameplay = ({
                 });
                 return;
             }
-            gsap.to(".map", {
+            gsap.to(".map-widget", {
                 opacity: 0.5,
                 duration: 0.25,
                 ease: "power2.out",
                 overwrite: "auto",
             });
         },
-        { dependencies: [isHoveringMap], scope: gameplayRef },
+        { dependencies: [isHoveringMap, isGuessing], scope: gameplayRef },
+    );
+
+    useGSAP(
+        () => {
+            if (!isGuessing) return;
+            gsap.to(".side", {
+                opacity: 0,
+                duration: 1,
+                ease: "sine.inOut",
+                overwrite: "auto",
+            });
+            gsap.to(".map-widget", {
+                translateY: "50%",
+                duration: 1,
+                ease: "sine.inOut",
+                overwrite: "auto",
+            });
+            gsap.to(".feed", {
+                opacity: 0,
+                duration: 1,
+                ease: "sine.inOut",
+                overwrite: "auto",
+            });
+        },
+        { dependencies: [isGuessing], scope: gameplayRef },
     );
 
     const handleLoad = () => {
@@ -296,6 +446,19 @@ const Gameplay = ({
                 <img src={source} draggable={false} onLoad={handleLoad} />
             </div>
             <div className="interface">
+                <div className="errors">
+                    <Widget
+                        hidden={!connectionFailed}
+                        className="error-widget disconnected"
+                    >
+                        <h2>Connection lost</h2>
+                        <VscDebugDisconnect color="white" size={"3em"} />
+                        <p>
+                            Could not connect to the server. Please check your
+                            internet connection.
+                        </p>
+                    </Widget>
+                </div>
                 <div className="top">
                     <div className="timer">
                         <p>{formatTime(time)}</p>
@@ -320,17 +483,39 @@ const Gameplay = ({
                 </div>
                 <div className="side">
                     <Widget
-                        className="map"
+                        className="map-widget"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                     >
-                        <SelectableMap
+                        <MapContainer
                             zoom={defaultZoom}
                             center={defaultCenter}
-                            lastReset={lastReset}
-                            selectionEnabled={true}
-                            onSelection={handleSelect}
-                        />
+                            scrollWheelZoom={true}
+                            attributionControl={false}
+                            className="map"
+                            worldCopyJump={false}
+                            maxBounds={[
+                                [-90, -180],
+                                [90, 180],
+                            ]}
+                            maxBoundsViscosity={1}
+                        >
+                            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+
+                            {markerPosition == null ? null : (
+                                <Marker
+                                    position={markerPosition}
+                                    icon={markerIcon}
+                                ></Marker>
+                            )}
+
+                            <GameplayMapController
+                                zoom={defaultZoom}
+                                center={defaultCenter as number[]}
+                                onSelection={handleSelect}
+                                lastReset={lastReset}
+                            />
+                        </MapContainer>
                         <div className="controls">
                             <PushButton className="reset" onClick={handleReset}>
                                 <RiResetLeftFill color="#ffffff" />

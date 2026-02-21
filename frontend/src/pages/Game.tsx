@@ -16,6 +16,10 @@ export default function Game({ onHome = () => {} }: GameTabAttributes) {
         setGameState(1);
     };
 
+    const handleRestart = () => {
+        handleGuideAccept();
+    };
+
     const handleGuess = (
         newGuess: number[] | undefined,
         newAnswer: GameAnswerPayload,
@@ -23,7 +27,7 @@ export default function Game({ onHome = () => {} }: GameTabAttributes) {
         setAnswer({
             guess: newGuess,
             answer: newAnswer,
-            onReset: () => setGameState(0),
+            onReset: handleRestart,
             onHome: onHome,
         });
     };
@@ -32,11 +36,11 @@ export default function Game({ onHome = () => {} }: GameTabAttributes) {
         <div className="game">
             {gameState === 0 ? (
                 <Guide onAccept={handleGuideAccept} />
-            ) : answer === undefined ? (
+            ) : (gameState === 1 && answer === undefined ) ? (
                 <Gameplay onGuess={handleGuess} />
-            ) : (
+            ) : answer !== undefined ? (
                 <Results {...answer} />
-            )}
+            ) : null}
         </div>
     );
 }

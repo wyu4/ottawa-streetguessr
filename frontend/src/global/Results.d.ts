@@ -10,3 +10,14 @@ declare type ResultsMapControllerAttributes = {
     answer: number[];
     haversineDistance: number;
 };
+
+declare type ResultsLeaveMode = "None" | "Home" | "Restart";
+
+declare type InfoWidgetAttributes = DivAttributes & {
+    answer: GameAnswerPayload;
+    onHome: () => void;
+    onReset: () => void;
+    onOpenMaps: () => void;
+    disabled: boolean;
+    error: number;
+};

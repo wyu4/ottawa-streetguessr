@@ -1,3 +1,7 @@
+declare type AboutTabAttributes = DivAttributes & {
+    onAgree?: () => void;
+};
+
 declare type HomeTabAttributes = DivAttributes & {
     onPlay?: () => void;
 };

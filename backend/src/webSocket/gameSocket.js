@@ -39,12 +39,16 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
 
         ws.on("message", async (data) => {
             if (!isEnabled()) {
+                resetGame();
                 return ws.send(
                     JSON.stringify({
                         type: "error",
                         message: "The server is currently down.",
                         success: false,
                     }),
+                    () => {
+                        ws.close();
+                    },
                 );
             }
 

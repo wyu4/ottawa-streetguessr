@@ -1,6 +1,7 @@
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { forwardRef, useRef, useState } from "react";
+import Theme from "./../styles/Theme.module.scss";
 
 const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
     (
@@ -18,7 +19,7 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
         },
         forwardedRef,
     ) => {
-        const playButtonRef = useRef<HTMLButtonElement>(null);
+        const buttonRef = useRef<HTMLButtonElement>(null);
         const [hovering, setHovering] = useState(false);
         const [down, setDown] = useState(false);
         const [cursor, setCursor] = useState("default");
@@ -28,26 +29,29 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
                 if (disabled) return;
                 setCursor("pointer");
                 if (down) {
-                    gsap.to(playButtonRef.current, {
+                    gsap.to(buttonRef.current, {
                         scale: 0.9,
                         duration: 0.3,
                         ease: "power2.out",
+                        borderColor: Theme.border_1,
                         overwrite: "auto",
                     });
                     return;
                 }
-                gsap.to(playButtonRef.current, {
+                gsap.to(buttonRef.current, {
                     scale: 1.1,
                     duration: 0.3,
                     ease: "power2.out",
+                    borderColor: "white",
                     overwrite: "auto",
                 });
             } else {
                 setCursor("default");
-                gsap.to(playButtonRef.current, {
+                gsap.to(buttonRef.current, {
                     scale: 1,
                     duration: 0.3,
                     ease: "power2.out",
+                    borderColor: Theme.border_1,
                     overwrite: "auto",
                 });
             }
@@ -91,7 +95,7 @@ const PushButton = forwardRef<HTMLButtonElement, PushButtonAttributes>(
             <button
                 className={`pushbutton ${className}`}
                 ref={(node) => {
-                    playButtonRef.current = node!;
+                    buttonRef.current = node!;
                     if (forwardedRef) {
                         if (typeof forwardedRef === "function")
                             forwardedRef(node);
