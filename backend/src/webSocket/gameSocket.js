@@ -6,6 +6,10 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
     const webSocketServer = new websocket.Server({ server });
 
     webSocketServer.on("connection", (ws, req) => {
+        if (!isEnabled()) {
+            ws.close();
+        }
+
         let playing = false;
         let currentGame = {
             lat: 0,

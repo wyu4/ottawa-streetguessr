@@ -11,6 +11,7 @@ import gsap from "gsap";
 import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { formatTime } from "../utils/TimeUtils";
+import { VscDebugDisconnect } from "react-icons/vsc";
 import "./../styles/Gameplay.scss";
 
 const markerIcon = new L.Icon({
@@ -62,15 +63,17 @@ const Gameplay = ({
     const selectionRef = useRef<number[] | undefined>(undefined);
 
     const sourceType = useRef<string>("image/webp");
+    const [connectionAttempt, setConnectionAttempt] = useState(0);
     const [connected, setConnected] = useState(false);
     const [started, setStarted] = useState(false);
-    const [startTime, setStartTime] = useState(-1);
     const [source, setSource] = useState<string | undefined>(undefined);
     const [loaded, setLoaded] = useState(false);
     const [time, setTime] = useState(0);
+    const [startTime, setStartTime] = useState(-1);
     const [lastReset, setLastReset] = useState(0);
     const [sourceIsValid, setSourceIsValid] = useState(true);
     const [isHoveringMap, setIsHoveringMap] = useState(false);
+    const [isGuessing, setIsGuessing] = useState(false);
     const [markerPosition, setMarkerPosition] =
         useState<LatLngExpression | null>(null);
 
@@ -102,7 +105,10 @@ const Gameplay = ({
 
     const sendGuess = () => {
         if (websocketRef.current == null) return;
-        websocketRef.current.send(JSON.stringify({ type: "guess" }));
+        setIsGuessing(true);
+        setTimeout(() => {
+            websocketRef.current!.send(JSON.stringify({ type: "guess" }));
+        }, 1000);
     };
 
     const handleSubmit = () => {
@@ -127,6 +133,11 @@ const Gameplay = ({
         };
 
         socket.onopen = () => {
+            setSource(undefined);
+            setLoaded(false);
+            setStartTime(-1);
+            setIsGuessing(false);
+
             setConnected(true);
             sendMessage({
                 type: "start",
@@ -149,7 +160,6 @@ const Gameplay = ({
                     sourceType.current = parsed.content!;
                 } else if (parsed.type === "game") {
                     setStarted(true);
-                    setStartTime(getCurrentTime);
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
                     onGuess(selectionRef.current, {
@@ -168,6 +178,8 @@ const Gameplay = ({
 
         socket.onclose = () => {
             setConnected(false);
+            setStarted(false);
+            setMarkerPosition(null);
             console.log("Lost connection...");
         };
 
@@ -179,8 +191,20 @@ const Gameplay = ({
             socket.close();
             websocketRef.current = null;
         };
-    }, [WebsocketUrl, onGuess]);
+    }, [WebsocketUrl, connectionAttempt]);
 
+    useEffect(() => {
+        if (connected) return;
+        const connectionAttemptID = setInterval(() => {
+            setConnectionAttempt((prev) => prev + 1);
+        }, 5000);
+
+        return () => {
+            clearInterval(connectionAttemptID);
+        };
+    }, [connected]);
+
+    // Send data feed requests when started
     useEffect(() => {
         if (websocketRef.current == null || !connected) return;
 
@@ -207,11 +231,11 @@ const Gameplay = ({
         };
     }, [connected, sourceIsValid, started]);
 
+    // Timer
     useEffect(() => {
-        if (startTime < 0) return;
+        if (startTime < 0 || !connected || isGuessing) return;
 
         const refresh = () => {
-            if (!started) return;
             const newTime = gameLength - (getCurrentTime() - startTime);
             if (newTime < 0) {
                 sendGuess();
@@ -226,8 +250,9 @@ const Gameplay = ({
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [gameLength, startTime, started]);
+    }, [gameLength, startTime, connected, isGuessing]);
 
+    // Set all intitial GSAP states
     useGSAP(
         () => {
             gsap.set(".interface", {
@@ -249,12 +274,57 @@ const Gameplay = ({
                 translateY: "-100%",
                 opacity: 0,
             });
-            gsap.set(".map", {
+            gsap.set(".map-widget", {
                 opacity: 0.5,
             });
+            gsap.set(".errors", {
+                opacity: 0,
+            });
+            gsap.set(".error-widget", {
+                translateY: "100%",
+                opacity: 0,
+            });
+
             return;
         },
         { dependencies: [], scope: gameplayRef },
+    );
+
+    useGSAP(
+        () => {
+            if (connected || connectionAttempt <= 0) {
+                gsap.to(".errors", {
+                    opacity: 0,
+                    duration: 1,
+                    pointerEvents: "none",
+                    ease: "power2.out",
+                    overwrite: "auto",
+                    delay: 0.5,
+                });
+                gsap.to(".disconnected", {
+                    translateY: "100%",
+                    opacity: 0,
+                    ease: "power2.out",
+                    overwrite: "auto",
+                });
+                return;
+            }
+            gsap.to(".errors", {
+                opacity: 1,
+                duration: 1,
+                pointerEvents: "all",
+                ease: "power2.out",
+                overwrite: "auto",
+            });
+            gsap.to(".disconnected", {
+                translateY: 0,
+                opacity: 1,
+                ease: "power2.out",
+                overwrite: "auto",
+                delay: 0.5,
+            });
+        },
+        { dependencies: [connected, connectionAttempt], scope: gameplayRef },
     );
 
     useGSAP(
@@ -265,6 +335,7 @@ const Gameplay = ({
                 });
                 return;
             }
+            setStartTime(getCurrentTime);
             gsap.to(".feed", {
                 opacity: 1,
                 duration: 1,
@@ -300,8 +371,9 @@ const Gameplay = ({
 
     useGSAP(
         () => {
+            if (isGuessing) return;
             if (isHoveringMap) {
-                gsap.to(".map", {
+                gsap.to(".map-widget", {
                     opacity: 1,
                     duration: 0.25,
                     ease: "power2.out",
@@ -309,14 +381,39 @@ const Gameplay = ({
                 });
                 return;
             }
-            gsap.to(".map", {
+            gsap.to(".map-widget", {
                 opacity: 0.5,
                 duration: 0.25,
                 ease: "power2.out",
                 overwrite: "auto",
             });
         },
-        { dependencies: [isHoveringMap], scope: gameplayRef },
+        { dependencies: [isHoveringMap, isGuessing], scope: gameplayRef },
+    );
+
+    useGSAP(
+        () => {
+            if (!isGuessing) return;
+            gsap.to(".side", {
+                opacity: 0,
+                duration: 1,
+                ease: "sine.inOut",
+                overwrite: "auto",
+            });
+            gsap.to(".map-widget", {
+                translateY: "50%",
+                duration: 1,
+                ease: "sine.inOut",
+                overwrite: "auto",
+            });
+            gsap.to(".feed", {
+                opacity: 0,
+                duration: 1,
+                ease: "sine.inOut",
+                overwrite: "auto",
+            });
+        },
+        { dependencies: [isGuessing], scope: gameplayRef },
     );
 
     const handleLoad = () => {
@@ -332,6 +429,19 @@ const Gameplay = ({
                 <img src={source} draggable={false} onLoad={handleLoad} />
             </div>
             <div className="interface">
+                <div
+                    hidden={connected || connectionAttempt <= 0}
+                    className="errors"
+                >
+                    <Widget className="error-widget disconnected">
+                        <h2>Connection lost</h2>
+                        <VscDebugDisconnect color="white" size={"3em"} />
+                        <p>
+                            Could not connect to the server. Please check your
+                            internet connection.
+                        </p>
+                    </Widget>
+                </div>
                 <div className="top">
                     <div className="timer">
                         <p>{formatTime(time)}</p>
