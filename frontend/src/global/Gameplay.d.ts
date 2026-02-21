@@ -18,3 +18,10 @@ declare type GameAnswerPayload = {
 declare type GameplayAttributes = DivAttributes & {
     onGuess?: (guess: number[] | undefined, answer: GameAnswerPayload) => void;
 };
+
+declare type GameplayMapAttributes = {
+    zoom?: number;
+    center?: number[];
+    lastReset?: number;
+    onSelection?: (lat: number, lng: number) => void;
+};

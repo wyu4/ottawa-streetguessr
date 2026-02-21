@@ -16,6 +16,11 @@ export default function Game({ onHome = () => {} }: GameTabAttributes) {
         setGameState(1);
     };
 
+    const handleRestart = () => {
+        if (answer === undefined) return;
+        setGameState(1);
+    };
+
     const handleGuess = (
         newGuess: number[] | undefined,
         newAnswer: GameAnswerPayload,

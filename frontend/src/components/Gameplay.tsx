@@ -1,6 +1,5 @@
 import { RiResetLeftFill } from "react-icons/ri";
 import PushButton from "./PushButton";
-import SelectableMap from "./SelectableMap";
 import Widget from "./Widget";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
@@ -9,8 +8,42 @@ import { useEffect, useRef, useState } from "react";
 import type { LatLngExpression } from "leaflet";
 import { LuClipboardCheck } from "react-icons/lu";
 import gsap from "gsap";
-import "./../styles/Gameplay.scss";
+import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
 import { formatTime } from "../utils/TimeUtils";
+import "./../styles/Gameplay.scss";
+
+const markerIcon = new L.Icon({
+    iconUrl: "/Marker.webp",
+    iconSize: [41, 41],
+});
+
+function GameplayMapController({
+    zoom = 7,
+    center = [45.2501659, -76.1298876],
+    lastReset = 0,
+    onSelection = () => {},
+}: GameplayMapAttributes) {
+    const map = useMap();
+
+    useEffect(() => {
+        const onMapClick = (event: L.LeafletMouseEvent) => {
+            const lat = Math.max(-90, Math.min(90, event.latlng.lat));
+            const lng = Math.max(-180, Math.min(180, event.latlng.lng));
+            onSelection(lat, lng);
+        };
+        map.on("click", onMapClick);
+        return () => {
+            map.off("click", onMapClick);
+        };
+    }, [map, onSelection]);
+
+    useEffect(() => {
+        map.setView(center as LatLngExpression, zoom);
+    }, [lastReset, map]);
+
+    return null;
+}
 
 const Gameplay = ({
     className = "",
@@ -38,6 +71,8 @@ const Gameplay = ({
     const [lastReset, setLastReset] = useState(0);
     const [sourceIsValid, setSourceIsValid] = useState(true);
     const [isHoveringMap, setIsHoveringMap] = useState(false);
+    const [markerPosition, setMarkerPosition] =
+        useState<LatLngExpression | null>(null);
 
     const handleReset = () => {
         setLastReset(Date.now());
@@ -62,6 +97,7 @@ const Gameplay = ({
 
     const handleSelect = (lat: number, lng: number) => {
         selectionRef.current = [lat, lng];
+        setMarkerPosition([lat, lng]);
     };
 
     const sendGuess = () => {
@@ -320,17 +356,39 @@ const Gameplay = ({
                 </div>
                 <div className="side">
                     <Widget
-                        className="map"
+                        className="map-widget"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                     >
-                        <SelectableMap
+                        <MapContainer
                             zoom={defaultZoom}
                             center={defaultCenter}
-                            lastReset={lastReset}
-                            selectionEnabled={true}
-                            onSelection={handleSelect}
-                        />
+                            scrollWheelZoom={true}
+                            attributionControl={false}
+                            className="map"
+                            worldCopyJump={false}
+                            maxBounds={[
+                                [-90, -180],
+                                [90, 180],
+                            ]}
+                            maxBoundsViscosity={1}
+                        >
+                            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+
+                            {markerPosition == null ? null : (
+                                <Marker
+                                    position={markerPosition}
+                                    icon={markerIcon}
+                                ></Marker>
+                            )}
+
+                            <GameplayMapController
+                                zoom={defaultZoom}
+                                center={defaultCenter as number[]}
+                                onSelection={handleSelect}
+                                lastReset={lastReset}
+                            />
+                        </MapContainer>
                         <div className="controls">
                             <PushButton className="reset" onClick={handleReset}>
                                 <RiResetLeftFill color="#ffffff" />
