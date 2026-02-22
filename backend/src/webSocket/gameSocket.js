@@ -7,39 +7,65 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
 
     webSocketServer.on("connection", (ws, req) => {
         let playing = false;
+        let lastFeedRequest = 0;
+        let gameStart = 0;
+        let eligibleForRoll = false;
+        let disconnected = false;
+
+        let tempCounter = 0;
+
+        const clientIP = req.socket.remoteAddress;
+        const feedRateLimit = 17;
+        const gameTimeout = 3 * 60;
+
+        const createTimeout = (timeout) => {
+            if (timeout < 0) {
+                return undefined;
+            }
+            return setTimeout(() => {
+                if (disconnected) return;
+                ws.close();
+                console.log(`<<< Disconnected ${clientIP} from game timeout.`);
+            }, timeout * 1000);
+        };
+
         let currentGame = {
             lat: 0,
             name: "",
             lon: 0,
             feed: "",
+            timeoutId: createTimeout(30),
         };
-        let lastFeedRequest = 0;
-        let gameStart = 0;
-        let eligibleForRoll = false;
 
-        const feedRateLimit = 17;
-        const gameTimeout = 2.5 * 60;
+        const resetGame = (timeout = gameTimeout) => {
+            if (currentGame.timeoutId) {
+                clearTimeout(currentGame.timeoutId);
+            }
 
-        const resetGame = () => {
             playing = false;
             currentGame = {
                 lat: 0,
                 name: "",
                 lon: 0,
                 feed: "",
+                timeoutId: createTimeout(timeout),
             };
             lastFeedRequest = 0;
             gameStart = 0;
             eligibleForRoll = false;
         };
 
-        console.log(
-            `<<< Websocket connection from ${req.socket.remoteAddress}`,
-        );
+        const disconnect = () => {
+            if (disconnected) return;
+            ws.close();
+            console.log(`<<< Manually disconnect ${clientIP}`);
+        };
+
+        console.log(`<<< Websocket connection from ${clientIP}`);
 
         ws.on("message", async (data) => {
             if (!isEnabled()) {
-                resetGame();
+                resetGame(-1);
                 return ws.send(
                     JSON.stringify({
                         type: "error",
@@ -47,7 +73,7 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
                         success: false,
                     }),
                     () => {
-                        ws.close();
+                        disconnect();
                     },
                 );
             }
@@ -63,7 +89,7 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
             const currentTime = getCurrentTime();
 
             console.log(
-                `<<< Websocket received message from ${req.socket.remoteAddress}: ${data.toString()}`,
+                `<<< Websocket received message from ${clientIP}: ${data.toString()}`,
             );
 
             const roll = () => {
@@ -78,8 +104,15 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
                     currentGame.lat = chosen.latitude;
                     currentGame.name = chosen.name;
                     currentGame.lon = chosen.longitude;
+                    // if (tempCounter == 0) {
+                    //     currentGame.feed = `https://traffic.ottawa.ca/camera?id=412`;
+                    // } else {
+                    //     currentGame.feed = `https://traffic.ottawa.ca/camera?id=${chosen.camera_number}`;
+                    // }
                     currentGame.feed = `https://traffic.ottawa.ca/camera?id=${chosen.camera_number}`;
-                    // currentGame.feed = `https://traffic.ottawa.ca/camera?id=412`;
+
+                    // tempCounter++;
+                    // console.log(tempCounter);
 
                     return ws.send(
                         JSON.stringify({
@@ -105,6 +138,7 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
 
             // Start a game
             if (parsed.type === "start" && !playing) {
+                resetGame();
                 roll();
             } else if (parsed.type === "roll" && playing && eligibleForRoll) {
                 resetGame();
@@ -118,8 +152,14 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
                             success: true,
                             answer: [currentGame.lat, currentGame.lon],
                         }),
+                        (err) => {
+                            if (err) {
+                                throw err;
+                            }
+                            disconnect();
+                        },
                     );
-                    resetGame();
+                    resetGame(-1);
                     playing = false;
                     return;
                 } catch (err) {
@@ -249,10 +289,13 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
         });
 
         ws.on("close", () => {
+            disconnected = true;
             console.log(
                 `<<< Websocket disconnected from ${req.socket.remoteAddress}`,
             );
-            resetGame();
+            if (currentGame.timeoutId) {
+                clearTimeout(currentGame.timeoutId);
+            }
         });
     });
 };

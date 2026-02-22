@@ -25,3 +25,6 @@ declare type GameplayMapAttributes = {
     lastReset?: number;
     onSelection?: (lat: number, lng: number) => void;
 };
+
+declare type GameConnection = "Connected" | "Disconnected" | "ConnectionFailed";
+declare type GameState = "NotPlaying" | "Playing" | "Submitting" | "AnswerReceived";

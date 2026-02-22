@@ -13,6 +13,7 @@ import L from "leaflet";
 import { formatTime } from "../utils/TimeUtils";
 import { VscDebugDisconnect } from "react-icons/vsc";
 import "./../styles/Gameplay.scss";
+import { OttawaBounds } from "../utils/Coordinates";
 
 const markerIcon = new L.Icon({
     iconUrl: "/Marker.webp",
@@ -20,8 +21,6 @@ const markerIcon = new L.Icon({
 });
 
 function GameplayMapController({
-    zoom = 7,
-    center = [45.2501659, -76.1298876],
     lastReset = 0,
     onSelection = () => {},
 }: GameplayMapAttributes) {
@@ -40,7 +39,10 @@ function GameplayMapController({
     }, [map, onSelection]);
 
     useEffect(() => {
-        map.setView(center as LatLngExpression, zoom);
+        map.fitBounds(OttawaBounds, {
+            animate: false,
+            padding: [50, 50],
+        });
     }, [lastReset, map]);
 
     return null;
@@ -50,10 +52,6 @@ const Gameplay = ({
     className = "",
     onGuess = () => {},
 }: GameplayAttributes) => {
-    const defaultCenter: LatLngExpression = [
-        45.40616374516014, -75.69580078125001,
-    ];
-    const defaultZoom = 8;
     const gameLength = 2 * 60;
 
     const WebsocketUrl = import.meta.env.VITE_Websocket_Url;
@@ -64,17 +62,16 @@ const Gameplay = ({
 
     const sourceType = useRef<string>("image/webp");
     const [connectionAttempt, setConnectionAttempt] = useState(0);
-    const [connectionFailed, setConnectionFailed] = useState(false);
-    const [connected, setConnected] = useState(false);
-    const [started, setStarted] = useState(false);
+    const [connection, setConnection] =
+        useState<GameConnection>("Disconnected");
+    const [state, setState] = useState<GameState>("NotPlaying");
     const [source, setSource] = useState<string | undefined>(undefined);
     const [loaded, setLoaded] = useState(false);
+    const [sourceIsValid, setSourceIsValid] = useState(true);
     const [time, setTime] = useState(0);
     const [startTime, setStartTime] = useState(-1);
     const [lastReset, setLastReset] = useState(0);
-    const [sourceIsValid, setSourceIsValid] = useState(true);
     const [isHoveringMap, setIsHoveringMap] = useState(false);
-    const [isGuessing, setIsGuessing] = useState(false);
     const [markerPosition, setMarkerPosition] =
         useState<LatLngExpression | null>(null);
 
@@ -88,7 +85,7 @@ const Gameplay = ({
 
     const handleSkip = () => {
         setSourceIsValid(true);
-        setStarted(false);
+        setState("NotPlaying");
     };
 
     const handleMouseEnter = () => {
@@ -106,7 +103,7 @@ const Gameplay = ({
 
     const sendGuess = () => {
         if (websocketRef.current == null) return;
-        setIsGuessing(true);
+        setState("Submitting");
         setTimeout(() => {
             websocketRef.current!.send(JSON.stringify({ type: "guess" }));
         }, 1000);
@@ -139,9 +136,7 @@ const Gameplay = ({
             setSource(undefined);
             setLoaded(false);
             setStartTime(-1);
-            setIsGuessing(false);
-
-            setConnected(true);
+            setState("NotPlaying");
             sendMessage({
                 type: "start",
             });
@@ -162,10 +157,11 @@ const Gameplay = ({
                     setSourceIsValid(true);
                     sourceType.current = parsed.content!;
                 } else if (parsed.type === "game") {
-                    setConnectionFailed(false);
-                    setStarted(true);
+                    setConnection("Connected");
+                    setState("Playing");
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
+                    setState("AnswerReceived");
                     gsap.to(".loading", {
                         opacity: 0,
                         duration: 1,
@@ -189,11 +185,14 @@ const Gameplay = ({
         };
 
         socket.onclose = () => {
-            setConnected(false);
-            setStarted(false);
+            setState((prev) => {
+                if (prev === "AnswerReceived") return "AnswerReceived";
+                return "NotPlaying";
+            });
             setMarkerPosition(null);
+            setSourceIsValid(true);
             closeId = setTimeout(() => {
-                setConnectionFailed(true);
+                setConnection("ConnectionFailed");
             }, 1000);
             console.log("Lost connection...");
         };
@@ -204,33 +203,39 @@ const Gameplay = ({
 
         return () => {
             clearTimeout(closeId);
-            socket.close();
+            if (
+                socket.readyState === WebSocket.CONNECTING ||
+                socket.readyState === WebSocket.OPEN
+            ) {
+                socket.close();
+            }
             websocketRef.current = null;
         };
     }, [WebsocketUrl, connectionAttempt]);
 
     useEffect(() => {
-        if (!connectionFailed) return;
+        if (connection !== "ConnectionFailed") return;
         const connectionAttemptID = setInterval(() => {
-            if (!connectionFailed) return;
+            if (connection !== "ConnectionFailed") return;
             setConnectionAttempt((prev) => prev + 1);
         }, 5000);
 
         return () => {
             clearInterval(connectionAttemptID);
         };
-    }, [connectionFailed]);
+    }, [connection]);
 
     // Send data feed requests when started
     useEffect(() => {
-        if (websocketRef.current == null || !connected) return;
+        if (websocketRef.current == null || connection !== "Connected") return;
 
         const socket = websocketRef.current;
         const sendMessage = (json: GamePayload) => {
             socket.send(JSON.stringify(json));
         };
 
-        if (!started) {
+        if (state === "NotPlaying") {
+            setLoaded(false);
             sendMessage({ type: "roll" });
             return;
         }
@@ -246,11 +251,12 @@ const Gameplay = ({
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [connected, sourceIsValid, started]);
+    }, [connection, sourceIsValid, state]);
 
     // Timer
     useEffect(() => {
-        if (startTime < 0 || !connected || isGuessing) return;
+        if (startTime < 0 || connection !== "Connected" || state !== "Playing")
+            return;
 
         const refresh = () => {
             const newTime = gameLength - (getCurrentTime() - startTime);
@@ -267,7 +273,7 @@ const Gameplay = ({
         return () => {
             clearInterval(refreshInterval);
         };
-    }, [gameLength, startTime, connected, isGuessing]);
+    }, [startTime, connection, state]);
 
     // Set all intitial GSAP states
     useGSAP(
@@ -286,6 +292,9 @@ const Gameplay = ({
                 duration: 0.75,
                 repeat: -1,
                 ease: "none",
+            });
+            gsap.set(".feed", {
+                opacity: 0,
             });
             gsap.set(".skip", {
                 translateY: "-100%",
@@ -309,7 +318,10 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (connectionFailed) {
+            if (
+                connection === "ConnectionFailed" &&
+                state !== "AnswerReceived"
+            ) {
                 gsap.to(".errors", {
                     opacity: 1,
                     duration: 1,
@@ -341,26 +353,29 @@ const Gameplay = ({
                 overwrite: "auto",
             });
         },
-        { dependencies: [connectionFailed], scope: gameplayRef },
+        { dependencies: [connection, state], scope: gameplayRef },
     );
 
     useGSAP(
         () => {
-            if (!loaded) {
-                gsap.set(".feed", {
-                    opacity: 0,
+            if (loaded && state == "Playing") {
+                setStartTime(getCurrentTime);
+                gsap.to(".feed", {
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power2.out",
+                    overwrite: "auto",
                 });
                 return;
             }
-            setStartTime(getCurrentTime);
             gsap.to(".feed", {
-                opacity: 1,
-                duration: 1,
+                opacity: 0,
+                duration: 0.5,
                 ease: "power2.out",
                 overwrite: "auto",
             });
         },
-        { dependencies: [loaded], scope: gameplayRef },
+        { dependencies: [loaded, state], scope: gameplayRef },
     );
 
     useGSAP(
@@ -388,7 +403,7 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (isGuessing) return;
+            if (state === "Submitting" || state === "AnswerReceived") return;
             if (isHoveringMap) {
                 gsap.to(".map-widget", {
                     opacity: 1,
@@ -405,32 +420,40 @@ const Gameplay = ({
                 overwrite: "auto",
             });
         },
-        { dependencies: [isHoveringMap, isGuessing], scope: gameplayRef },
+        { dependencies: [isHoveringMap, state], scope: gameplayRef },
     );
 
     useGSAP(
         () => {
-            if (!isGuessing) return;
+            if (state !== "Playing") {
+                gsap.to(".side", {
+                    opacity: 0,
+                    duration: 1,
+                    ease: "sine.inOut",
+                    overwrite: "auto",
+                });
+                gsap.to(".map-widget", {
+                    translateY: "50%",
+                    duration: 1,
+                    ease: "sine.inOut",
+                    overwrite: "auto",
+                });
+                return;
+            }
             gsap.to(".side", {
-                opacity: 0,
+                opacity: 1,
                 duration: 1,
                 ease: "sine.inOut",
                 overwrite: "auto",
             });
             gsap.to(".map-widget", {
-                translateY: "50%",
-                duration: 1,
-                ease: "sine.inOut",
-                overwrite: "auto",
-            });
-            gsap.to(".feed", {
-                opacity: 0,
+                translateY: 0,
                 duration: 1,
                 ease: "sine.inOut",
                 overwrite: "auto",
             });
         },
-        { dependencies: [isGuessing], scope: gameplayRef },
+        { dependencies: [state], scope: gameplayRef },
     );
 
     const handleLoad = () => {
@@ -448,7 +471,7 @@ const Gameplay = ({
             <div className="interface">
                 <div className="errors">
                     <Widget
-                        hidden={!connectionFailed}
+                        hidden={connection === "ConnectionFailed"}
                         className="error-widget disconnected"
                     >
                         <h2>Connection lost</h2>
@@ -488,8 +511,6 @@ const Gameplay = ({
                         onMouseLeave={handleMouseLeave}
                     >
                         <MapContainer
-                            zoom={defaultZoom}
-                            center={defaultCenter}
                             scrollWheelZoom={true}
                             attributionControl={false}
                             className="map"
@@ -510,8 +531,6 @@ const Gameplay = ({
                             )}
 
                             <GameplayMapController
-                                zoom={defaultZoom}
-                                center={defaultCenter as number[]}
                                 onSelection={handleSelect}
                                 lastReset={lastReset}
                             />
@@ -523,7 +542,7 @@ const Gameplay = ({
                             <PushButton
                                 className="submit"
                                 onClick={handleSubmit}
-                                disabled={!started}
+                                disabled={state === "NotPlaying"}
                             >
                                 <LuClipboardCheck color="#ffffff" />
                             </PushButton>
