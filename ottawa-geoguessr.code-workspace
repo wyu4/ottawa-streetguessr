@@ -1,16 +1,19 @@
 {
-	"folders": [
-		{
-			"name": "ottawa-streetguessr",
-			"path": "."
-		},
-		{
-			"name": "backend",
-			"path": "backend"
-		},
-		{
-			"name": "frontend",
-			"path": "frontend"
-		}
-	]
+    "folders": [
+        {
+            "name": "ottawa-streetguessr",
+            "path": ".",
+        },
+        {
+            "name": "backend",
+            "path": "backend",
+        },
+        {
+            "name": "frontend",
+            "path": "frontend",
+        },
+    ],
+    "settings": {
+        "liveServer.settings.multiRootWorkspaceName": "frontend",
+    },
 }
