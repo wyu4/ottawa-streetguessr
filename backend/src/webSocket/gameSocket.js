@@ -112,7 +112,7 @@ const createGameSocket = (server, getCameras, isEnabled, getCurrentTime) => {
                     currentGame.feed = `https://traffic.ottawa.ca/camera?id=${chosen.camera_number}`;
 
                     // tempCounter++;
-                    console.log(tempCounter);
+                    // console.log(tempCounter);
 
                     return ws.send(
                         JSON.stringify({
