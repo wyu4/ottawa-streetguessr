@@ -410,21 +410,41 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (!isGuessing) return;
+            if (isGuessing) {
+                gsap.to(".side", {
+                    opacity: 0,
+                    duration: 1,
+                    ease: "sine.inOut",
+                    overwrite: "auto",
+                });
+                gsap.to(".map-widget", {
+                    translateY: "50%",
+                    duration: 1,
+                    ease: "sine.inOut",
+                    overwrite: "auto",
+                });
+                gsap.to(".feed", {
+                    opacity: 0,
+                    duration: 1,
+                    ease: "sine.inOut",
+                    overwrite: "auto",
+                });
+                return;
+            }
             gsap.to(".side", {
-                opacity: 0,
+                opacity: 1,
                 duration: 1,
                 ease: "sine.inOut",
                 overwrite: "auto",
             });
             gsap.to(".map-widget", {
-                translateY: "50%",
+                translateY: 0,
                 duration: 1,
                 ease: "sine.inOut",
                 overwrite: "auto",
             });
             gsap.to(".feed", {
-                opacity: 0,
+                opacity: 1,
                 duration: 1,
                 ease: "sine.inOut",
                 overwrite: "auto",
