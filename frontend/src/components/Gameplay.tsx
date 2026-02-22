@@ -75,6 +75,7 @@ const Gameplay = ({
     const [sourceIsValid, setSourceIsValid] = useState(true);
     const [isHoveringMap, setIsHoveringMap] = useState(false);
     const [isGuessing, setIsGuessing] = useState(false);
+    const [answerReceived, setAnswerReceived] = useState(false);
     const [markerPosition, setMarkerPosition] =
         useState<LatLngExpression | null>(null);
 
@@ -166,6 +167,7 @@ const Gameplay = ({
                     setStarted(true);
                 } else if (parsed.type === "guess") {
                     if (parsed.answer === undefined) return;
+                    setAnswerReceived(true);
                     gsap.to(".loading", {
                         opacity: 0,
                         duration: 1,
@@ -309,7 +311,7 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (connectionFailed) {
+            if (connectionFailed && !answerReceived) {
                 gsap.to(".errors", {
                     opacity: 1,
                     duration: 1,
@@ -341,7 +343,7 @@ const Gameplay = ({
                 overwrite: "auto",
             });
         },
-        { dependencies: [connectionFailed], scope: gameplayRef },
+        { dependencies: [connectionFailed, answerReceived], scope: gameplayRef },
     );
 
     useGSAP(
