@@ -425,7 +425,7 @@ const Gameplay = ({
 
     useGSAP(
         () => {
-            if (state !== "Playing") {
+            if (state !== "NotPlaying" && state !== "Playing") {
                 gsap.to(".side", {
                     opacity: 0,
                     duration: 1,
