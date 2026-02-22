@@ -5,7 +5,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Theme from "./../styles/Theme.module.scss";
 import "./../styles/Results.scss";
 import Widget from "./Widget";
-import { calculateHaversineDistance, midpoint } from "../utils/Coordinates";
+import {
+    calculateHaversineDistance,
+    midpoint,
+    OttawaBounds,
+    WorldBounds,
+} from "../utils/Coordinates";
 import PushButton from "./PushButton";
 import { FaHome } from "react-icons/fa";
 import { IoIosRefresh } from "react-icons/io";
@@ -27,45 +32,77 @@ const ResultsMapController = ({
     guess,
     answer,
     haversineDistance,
+    isMobile,
 }: ResultsMapControllerAttributes) => {
     const map = useMap();
 
     useEffect(() => {
-        const center = midpoint(guess, answer) as LatLngExpression;
+        const center = (
+            guess ? midpoint(guess, answer) : answer
+        ) as LatLngExpression;
 
-        const path: LatLngExpression[] = [
-            guess as LatLngExpression,
-            answer as LatLngExpression,
-        ];
-        const bounds = L.latLngBounds([
-            guess as LatLngExpression,
-            answer as LatLngExpression,
-        ]);
-        map.fitBounds(bounds, {
-            padding: [100, 100],
+        map.fitBounds(OttawaBounds, {
+            animate: false,
         });
+        const fitDelay = setTimeout(() => {
+            if (guess) {
+                const bounds = L.latLngBounds([
+                    guess as LatLngExpression,
+                    answer as LatLngExpression,
+                ]);
+                map.fitBounds(bounds, {
+                    paddingBottomRight: isMobile
+                        ? [50, 50]
+                        : [50 + window.innerWidth / 3, window.innerWidth / 10],
+                    paddingTopLeft: isMobile
+                        ? [50, 50]
+                        : [window.innerWidth / 10, 50 + window.innerHeight / 4],
+                    animate: true,
+                });
+                return;
+            }
+            map.setView(answer as LatLngExpression, 13, {
+                animate: true,
+            });
+        }, 500);
+
         const distance = L.marker(center, {
             icon: L.divIcon({
                 className: "distance",
-                html: `<div><p>${haversineDistance.toFixed(2)} km</p></div>`,
+                html: `<div><p>${guess ? haversineDistance.toFixed(2) + "km" : ""}</p></div>`,
             }),
         }).addTo(map);
         const answerMarker = L.marker(answer as LatLngExpression, {
             icon: answerIcon,
         }).addTo(map);
-        const guessMarker = L.marker(guess as LatLngExpression, {
-            icon: guessIcon,
-        }).addTo(map);
 
-        const line = L.polyline(path).addTo(map);
+        let guessMarker = undefined;
+        let line = undefined;
+
+        if (guess) {
+            guessMarker = L.marker(guess as LatLngExpression, {
+                icon: guessIcon,
+            }).addTo(map);
+            const path: LatLngExpression[] = [
+                guess as LatLngExpression,
+                answer as LatLngExpression,
+            ];
+            line = L.polyline(path).addTo(map);
+        }
 
         return () => {
+            clearTimeout(fitDelay);
             map.removeLayer(distance);
             map.removeLayer(answerMarker);
-            map.removeLayer(guessMarker);
-            map.removeLayer(line);
+            if (guessMarker) {
+                map.removeLayer(guessMarker);
+            }
+
+            if (line) {
+                map.removeLayer(line);
+            }
         };
-    }, [guess, answer, map, haversineDistance]);
+    }, [guess, answer, map, haversineDistance, isMobile]);
 
     return null;
 };
@@ -105,48 +142,60 @@ const Results = ({
     }
 
     useGSAP(() => {
-        gsap.set(".map, .info", {
+        gsap.set(".map, .info, .child", {
             opacity: 0,
         });
-        gsap.to(".map, .info", {
+        gsap.to(".map", {
             opacity: 1,
             duration: 1,
             ease: "power2.out",
             overwrite: "auto",
         });
 
-        if (!isMobile) {
-            gsap.set(".info", {
-                top: `calc(1.5 * ${Theme.spacing_1})`,
-            });
-        }
-
         gsap.set(".info .child", {
             opacity: 0,
         });
         const infoChildrenTween = gsap.to(".info .child", {
             opacity: 1,
-            duration: 1,
-            delay: 0.5,
-            stagger: 0.25,
+            duration: 2,
+            delay: 1,
+            stagger: 0.1,
             ease: "power2.out",
         });
-        gsap.to(".info", {
-            top: Theme.spacing_1,
-            duration: infoChildrenTween.duration(),
-            ease: "sine.out",
-            onComplete: () => {
-                setIsOpening(false);
-            }
-        });
+
+        if (isMobile) {
+            gsap.set(".info", {
+                opacity: 1,
+                top: "0",
+            });
+            setIsOpening(false);
+        } else {
+            gsap.set(".info", {
+                opacity: 0,
+                top: `calc(1.5 * ${Theme.spacing_1})`,
+            });
+            gsap.to(".info", {
+                opacity: 1,
+                top: Theme.spacing_1,
+                delay: infoChildrenTween.delay(),
+                duration: infoChildrenTween.duration() / 2,
+                ease: "sine.inout",
+                overwrite: "auto",
+                onComplete: () => {
+                    setIsOpening(false);
+                },
+            });
+        }
 
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 800);
         };
+        window.addEventListener("load", handleResize);
         window.addEventListener("resize", handleResize);
         handleResize();
 
         return () => {
+            window.removeEventListener("load", handleResize);
             window.removeEventListener("resize", handleResize);
         };
     }, []);
@@ -154,10 +203,8 @@ const Results = ({
     useGSAP(
         () => {
             if (isMobile) {
-                gsap.to(".info", {
-                    top: "auto",
-                    duration: 0,
-                    overwrite: "auto",
+                gsap.set(".info", {
+                    top: "0",
                 });
                 return;
             }
@@ -180,11 +227,13 @@ const Results = ({
                 opacity: 0,
                 duration: 0.25,
                 ease: "power2.out",
+                overwrite: "auto",
             }).to(".info, .map", {
                 opacity: 0,
                 stagger: 0.25,
                 duration: 0.5,
                 ease: "power2.out",
+                overwrite: "auto",
             });
             const leaveId = setTimeout(() => {
                 if (leaving === "Home") {
@@ -204,20 +253,12 @@ const Results = ({
     return (
         <div className={`results ${className}`} {...props} ref={resultsRef}>
             <MapContainer
-                center={
-                    (guess === undefined
-                        ? answer.latlng
-                        : [45.4214, 75.6919]) as LatLngExpression
-                }
                 zoom={15}
                 scrollWheelZoom={true}
                 attributionControl={false}
                 className="map"
                 worldCopyJump={false}
-                maxBounds={[
-                    [-90, -180],
-                    [90, 180],
-                ]}
+                maxBounds={WorldBounds}
                 maxBoundsViscosity={1}
             >
                 <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
@@ -226,15 +267,13 @@ const Results = ({
                         position={answer.latlng as LatLngExpression}
                         icon={answerIcon}
                     />
-                ) : (
-                    <>
-                        <ResultsMapController
-                            guess={guess}
-                            answer={answer.latlng}
-                            haversineDistance={haversineDistance}
-                        />
-                    </>
-                )}
+                ) : null}
+                <ResultsMapController
+                    guess={guess}
+                    answer={answer.latlng}
+                    haversineDistance={haversineDistance}
+                    isMobile={isMobile}
+                />
             </MapContainer>
             <InfoWidget
                 answer={answer}

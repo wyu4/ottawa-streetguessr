@@ -13,6 +13,7 @@ import L from "leaflet";
 import { formatTime } from "../utils/TimeUtils";
 import { VscDebugDisconnect } from "react-icons/vsc";
 import "./../styles/Gameplay.scss";
+import { OttawaBounds } from "../utils/Coordinates";
 
 const markerIcon = new L.Icon({
     iconUrl: "/Marker.webp",
@@ -20,8 +21,6 @@ const markerIcon = new L.Icon({
 });
 
 function GameplayMapController({
-    zoom = 7,
-    center = [45.2501659, -76.1298876],
     lastReset = 0,
     onSelection = () => {},
 }: GameplayMapAttributes) {
@@ -40,7 +39,10 @@ function GameplayMapController({
     }, [map, onSelection]);
 
     useEffect(() => {
-        map.setView(center as LatLngExpression, zoom);
+        map.fitBounds(OttawaBounds, {
+            animate: false,
+            padding: [50, 50],
+        });
     }, [lastReset, map]);
 
     return null;
@@ -50,10 +52,6 @@ const Gameplay = ({
     className = "",
     onGuess = () => {},
 }: GameplayAttributes) => {
-    const defaultCenter: LatLngExpression = [
-        45.40616374516014, -75.69580078125001,
-    ];
-    const defaultZoom = 8;
     const gameLength = 2 * 60;
 
     const WebsocketUrl = import.meta.env.VITE_Websocket_Url;
@@ -513,8 +511,6 @@ const Gameplay = ({
                         onMouseLeave={handleMouseLeave}
                     >
                         <MapContainer
-                            zoom={defaultZoom}
-                            center={defaultCenter}
                             scrollWheelZoom={true}
                             attributionControl={false}
                             className="map"
@@ -535,8 +531,6 @@ const Gameplay = ({
                             )}
 
                             <GameplayMapController
-                                zoom={defaultZoom}
-                                center={defaultCenter as number[]}
                                 onSelection={handleSelect}
                                 lastReset={lastReset}
                             />

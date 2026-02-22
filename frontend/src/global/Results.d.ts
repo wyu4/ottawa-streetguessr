@@ -6,9 +6,10 @@ declare type ResultsAttributes = DivAttributes & {
 };
 
 declare type ResultsMapControllerAttributes = {
-    guess: number[];
+    guess: number[] | undefined;
     answer: number[];
     haversineDistance: number;
+    isMobile: boolean
 };
 
 declare type ResultsLeaveMode = "None" | "Home" | "Restart";
